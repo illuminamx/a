@@ -5,6 +5,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { useCart } from '../../context/CartContext';
 import { Search, X, Plus } from 'lucide-react';
 import ProductCard from '../ProductCard';
+import { ColorCircle } from '../../utils/colorUtils';
 
 const ProductosVenta = () => {
   const [products, setProducts] = useState([]);

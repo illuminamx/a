@@ -3,6 +3,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { X, Printer } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+import { getColorHex } from '../../utils/colorUtils';
 
 const TicketGenerator = ({ pedido, onClose }) => {
   const { isDark } = useTheme();

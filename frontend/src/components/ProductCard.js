@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { ColorCircle } from '../utils/colorUtils';
 
 const ProductCard = ({ product, showPrices = false }) => {
   const { isDark } = useTheme();
@@ -100,16 +101,20 @@ const ProductCard = ({ product, showPrices = false }) => {
                 Colores:
               </p>
               <div className="flex flex-wrap gap-1.5">
-                {product.colores.map((color, index) => (
-                  <span
-                    key={index}
-                    className={`text-xs px-2 py-1 rounded-full ${
-                      isDark ? 'bg-white/10' : 'bg-black/5'
-                    }`}
-                  >
-                    {typeof color === 'string' ? color : color.nombre || color}
-                  </span>
-                ))}
+                {product.colores.map((color, index) => {
+                  const colorStr = typeof color === 'string' ? color : color.nombre || color;
+                  return (
+                    <span
+                      key={index}
+                      className={`flex items-center gap-1.5 text-xs px-2 py-1 rounded-full ${
+                        isDark ? 'bg-white/10' : 'bg-black/5'
+                      }`}
+                    >
+                      <ColorCircle colorName={colorStr} size={10} />
+                      {colorStr}
+                    </span>
+                  );
+                })}
               </div>
             </div>
           )}

@@ -4,6 +4,7 @@ import { useToast } from '../components/Toast';
 import { X, Upload, Trash2, Plus } from 'lucide-react';
 import axios from 'axios';
 import ImageEditor from './ImageEditor';
+import { ColorCircle } from '../utils/colorUtils';
 
 const IMGBB_API_KEY = '565bfd923ef367e0a4de22ec987bc64e';
 
@@ -133,6 +134,32 @@ const ProductFormModal = ({ product, onSave, onClose }) => {
       ...prev,
       imagenes: prev.imagenes.filter((_, i) => i !== index)
     }));
+  };
+
+  const handleSaveTransform = async (index, blob) => {
+    try {
+      // Subir la imagen transformada a ImgBB
+      const formData = new FormData();
+      formData.append('image', blob);
+
+      const response = await axios.post(
+        `https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`,
+        formData
+      );
+
+      const newUrl = response.data.data.url;
+
+      // Actualizar la URL en el estado
+      setFormData(prev => ({
+        ...prev,
+        imagenes: prev.imagenes.map((url, i) => i === index ? newUrl : url)
+      }));
+
+      showToast('Encuadre guardado correctamente', 'success');
+    } catch (error) {
+      console.error('Error guardando encuadre:', error);
+      showToast('Error al guardar encuadre', 'error');
+    }
   };
 
   const handleSubmit = (e) => {
@@ -317,23 +344,27 @@ const ProductFormModal = ({ product, onSave, onClose }) => {
               </button>
             </div>
             <div className="flex flex-wrap gap-2">
-              {formData.colores.map((color, index) => (
-                <span
-                  key={index}
-                  className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm ${
-                    isDark ? 'bg-white/10' : 'bg-black/5'
-                  }`}
-                >
-                  {typeof color === 'string' ? color : color.nombre || color}
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveColor(index)}
-                    className="hover:opacity-70"
+              {formData.colores.map((color, index) => {
+                const colorStr = typeof color === 'string' ? color : color.nombre || color;
+                return (
+                  <span
+                    key={index}
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm ${
+                      isDark ? 'bg-white/10' : 'bg-black/5'
+                    }`}
                   >
-                    <X size={14} />
-                  </button>
-                </span>
-              ))}
+                    <ColorCircle colorName={colorStr} size={12} />
+                    {colorStr}
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveColor(index)}
+                      className="hover:opacity-70"
+                    >
+                      <X size={14} />
+                    </button>
+                  </span>
+                );
+              })}
             </div>
           </div>
 
@@ -375,6 +406,7 @@ const ProductFormModal = ({ product, onSave, onClose }) => {
                     index={index}
                     isDark={isDark}
                     onRemove={() => handleRemoveImage(index)}
+                    onSaveTransform={handleSaveTransform}
                   />
                 ))}
               </div>
