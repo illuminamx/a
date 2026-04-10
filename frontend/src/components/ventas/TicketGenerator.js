@@ -118,38 +118,42 @@ const TicketGenerator = ({ pedido, onClose }) => {
                   <tr>
                     <th className="text-left font-bold pb-2" style={{ width: '40%' }}>PRODUCTO</th>
                     <th className="text-center font-bold pb-2" style={{ width: '18%' }}>CANTIDAD</th>
-                    <th className="text-right font-bold pb-2" style={{ width: '20%' }}>P/PIEZA</th>
-                    <th className="text-right font-bold pb-2" style={{ width: '22%' }}>TOTAL</th>
+                    <th className="text-center font-bold pb-2" style={{ width: '20%' }}>P/PIEZA</th>
+                    <th className="text-center font-bold pb-2" style={{ width: '22%' }}>TOTAL</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {pedido.productos.map((producto, index) => {
-                    const totalQty = producto.colores.reduce((sum, c) => sum + c.cantidad, 0);
-                    const totalPrice = producto.precioUnitario * totalQty;
-                    
-                    return (
-                      <React.Fragment key={index}>
+                  {pedido.productos.map((producto, index) => (
+                    <React.Fragment key={index}>
+                      {/* Nombre del producto */}
+                      <tr>
+                        <td colSpan="4" className="pt-3 pb-0 font-bold">
+                          {producto.nombre}
+                        </td>
+                      </tr>
+                      {/* Colores */}
+                      {producto.colores && producto.colores.length > 0 ? (
+                        producto.colores.map((color, i) => {
+                          const totalColor = producto.precioUnitario * color.cantidad;
+                          return (
+                            <tr key={`${index}-${i}`}>
+                              <td className="pb-1 pl-2 text-[10px]">- {color.nombre}</td>
+                              <td className="pb-1 text-center">{color.cantidad}</td>
+                              <td className="pb-1 text-center">${producto.precioUnitario.toFixed(2)}</td>
+                              <td className="pb-1 text-center font-bold">${totalColor.toFixed(2)}</td>
+                            </tr>
+                          );
+                        })
+                      ) : (
                         <tr>
-                          <td className="pt-2 pb-1 align-top" style={{ wordWrap: 'break-word' }}>
-                            <span className="font-semibold">{producto.nombre}</span>
-                          </td>
-                          <td className="pt-2 pb-1 text-center align-top">{totalQty}</td>
-                          <td className="pt-2 pb-1 text-right align-top">${producto.precioUnitario.toFixed(2)}</td>
-                          <td className="pt-2 pb-1 text-right align-top font-bold">${totalPrice.toFixed(2)}</td>
+                          <td className="pb-1 pl-2 text-[10px]">- N/A</td>
+                          <td className="pb-1 text-center">1</td>
+                          <td className="pb-1 text-center">${producto.precioUnitario.toFixed(2)}</td>
+                          <td className="pb-1 text-center font-bold">${producto.precioUnitario.toFixed(2)}</td>
                         </tr>
-                        {producto.colores && producto.colores.length > 0 && producto.colores.map((color, i) => (
-                          <tr key={`${index}-${i}`}>
-                            <td colSpan="4" className="pb-1 pl-2">
-                              <div className="flex justify-between items-center text-[10px]">
-                                <span>- {color.nombre}</span>
-                                <span className="font-semibold">(x{color.cantidad})</span>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </React.Fragment>
-                    );
-                  })}
+                      )}
+                    </React.Fragment>
+                  ))}
                 </tbody>
               </table>
             </div>
