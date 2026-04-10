@@ -4,6 +4,8 @@ import { db } from '../../firebase';
 import { useTheme } from '../../context/ThemeContext';
 import { useToast } from '../Toast';
 import { Plus, Edit2, Trash2, X, DollarSign, Search, Tag, ShoppingCart } from 'lucide-react';
+import PreciosEspecialesModal from './PreciosEspecialesModal';
+import CrearPedidoModal from './CrearPedidoModal';
 
 const ClientesPanel = ({ clientes, onClientesChange }) => {
   const { isDark } = useTheme();
@@ -278,6 +280,24 @@ const ClientesPanel = ({ clientes, onClientesChange }) => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Modal de Precios Especiales */}
+      {showPreciosModal && (
+        <PreciosEspecialesModal
+          cliente={showPreciosModal}
+          onClose={() => setShowPreciosModal(null)}
+          onSave={onClientesChange}
+        />
+      )}
+
+      {/* Modal de Crear Pedido */}
+      {showPedidoModal && (
+        <CrearPedidoModal
+          cliente={showPedidoModal}
+          onClose={() => setShowPedidoModal(null)}
+          onPedidoCreated={onClientesChange}
+        />
       )}
     </div>
   );
