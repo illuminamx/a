@@ -80,7 +80,7 @@ const TicketGenerator = ({ pedido, onClose }) => {
                   <p>Con salida al pasillo 2</p>
                 </div>
               </div>
-              <div className="border-2 border-black rounded-full w-12 h-12 flex items-center justify-center">
+              <div className="border-2 border-black rounded-full w-12 h-12 flex items-center justify-center flex-shrink-0">
                 <span className="text-2xl font-bold italic">J</span>
               </div>
             </div>
@@ -113,32 +113,45 @@ const TicketGenerator = ({ pedido, onClose }) => {
 
             {/* Tabla de productos */}
             <div className="mb-3">
-              <div className="grid grid-cols-4 gap-1 text-xs font-bold mb-2">
-                <div>PRODUCTO</div>
-                <div className="text-center">CANTIDAD</div>
-                <div className="text-right">P/PIEZA</div>
-                <div className="text-right">TOTAL</div>
-              </div>
-              
-              {pedido.productos.map((producto, index) => (
-                <div key={index} className="mb-3">
-                  <div className="grid grid-cols-4 gap-1 text-xs items-start">
-                    <div className="font-semibold">{producto.nombre}</div>
-                    <div className="text-center">{producto.cantidad}</div>
-                    <div className="text-right">${producto.precioUnitario.toFixed(2)}</div>
-                    <div className="text-right font-bold">${(producto.cantidad * producto.precioUnitario).toFixed(2)}</div>
-                  </div>
-                  {producto.colores && producto.colores.length > 0 && (
-                    <div className="mt-1 ml-1">
-                      {producto.colores.map((color, i) => (
-                        <div key={i} className="text-[10px] leading-tight">
-                          - {color}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ))}
+              <table className="w-full text-xs" style={{ tableLayout: 'fixed' }}>
+                <thead>
+                  <tr className="border-b border-black">
+                    <th className="text-left font-bold pb-1" style={{ width: '35%' }}>PRODUCTO</th>
+                    <th className="text-center font-bold pb-1" style={{ width: '20%' }}>CANTIDAD</th>
+                    <th className="text-right font-bold pb-1" style={{ width: '22%' }}>P/PIEZA</th>
+                    <th className="text-right font-bold pb-1" style={{ width: '23%' }}>TOTAL</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {pedido.productos.map((producto, index) => {
+                    const totalQty = producto.colores.reduce((sum, c) => sum + c.cantidad, 0);
+                    const totalPrice = producto.precioUnitario * totalQty;
+                    
+                    return (
+                      <React.Fragment key={index}>
+                        <tr className="border-b border-gray-300">
+                          <td className="py-2 align-top" style={{ wordWrap: 'break-word' }}>
+                            <span className="font-semibold">{producto.nombre}</span>
+                          </td>
+                          <td className="py-2 text-center align-top">{totalQty}</td>
+                          <td className="py-2 text-right align-top">${producto.precioUnitario.toFixed(2)}</td>
+                          <td className="py-2 text-right align-top font-bold">${totalPrice.toFixed(2)}</td>
+                        </tr>
+                        {producto.colores && producto.colores.length > 0 && producto.colores.map((color, i) => (
+                          <tr key={`${index}-${i}`}>
+                            <td colSpan="4" className="pb-1">
+                              <div className="flex justify-between items-center text-[10px] ml-2">
+                                <span>- {color.nombre}</span>
+                                <span className="font-semibold">(x{color.cantidad})</span>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </React.Fragment>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
 
             {/* Nota de productos */}
@@ -156,7 +169,9 @@ const TicketGenerator = ({ pedido, onClose }) => {
               <div className="flex justify-between mb-1">
                 <span>Total de artículos:</span>
                 <span className="font-bold">
-                  {pedido.productos.reduce((sum, p) => sum + p.cantidad, 0)}
+                  {pedido.productos.reduce((sum, p) => {
+                    return sum + p.colores.reduce((s, c) => s + c.cantidad, 0);
+                  }, 0)}
                 </span>
               </div>
               <div className="flex justify-between font-bold text-base">

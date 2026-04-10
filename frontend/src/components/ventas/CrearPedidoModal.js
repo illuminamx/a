@@ -3,7 +3,7 @@ import { collection, getDocs, addDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useTheme } from '../../context/ThemeContext';
 import { useToast } from '../Toast';
-import { X, Plus, Minus, Trash2, ShoppingCart, DollarSign, Tag, Box, Check } from 'lucide-react';
+import { X, Plus, Minus, Trash2, ShoppingCart, ChevronRight, Image as ImageIcon } from 'lucide-react';
 import { ColorCircle } from '../../utils/colorUtils';
 import TicketGenerator from './TicketGenerator';
 
@@ -16,8 +16,10 @@ const CrearPedidoModal = ({ cliente, onClose, onPedidoCreated }) => {
   const [montoPagado, setMontoPagado] = useState('');
   const [creando, setCreando] = useState(false);
   const [generatedTicket, setGeneratedTicket] = useState(null);
-  const [showColorModal, setShowColorModal] = useState(null);
-  const [selectedColors, setSelectedColors] = useState([]);
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [colorQuantities, setColorQuantities] = useState({});
+  const [selectedPriceType, setSelectedPriceType] = useState(null);
+  const [customPrice, setCustomPrice] = useState('');
 
   useEffect(() => {
     loadProductos();
@@ -39,101 +41,95 @@ const CrearPedidoModal = ({ cliente, onClose, onPedidoCreated }) => {
     }
   };
 
-  const handlePriceClick = (producto, priceType) => {
-    // Si el producto tiene colores, mostrar selector
-    if (producto.colores && producto.colores.length > 0) {
-      setShowColorModal({ producto, priceType });
-      setSelectedColors([]);
-    } else {
-      // Si no tiene colores, agregar directamente
-      agregarAlCarrito(producto, priceType, []);
-    }
+  const openProductDetail = (producto) => {
+    setSelectedProduct(producto);
+    setColorQuantities({});
+    setSelectedPriceType(null);
+    setCustomPrice('');
   };
 
-  const toggleColor = (color) => {
-    const colorStr = typeof color === 'string' ? color : color.nombre || color;
-    if (selectedColors.includes(colorStr)) {
-      setSelectedColors(selectedColors.filter(c => c !== colorStr));
-    } else {
-      setSelectedColors([...selectedColors, colorStr]);
-    }
+  const updateColorQuantity = (colorName, delta) => {
+    setColorQuantities(prev => {
+      const current = prev[colorName] || 0;
+      const newValue = Math.max(0, current + delta);
+      if (newValue === 0) {
+        const { [colorName]: removed, ...rest } = prev;
+        return rest;
+      }
+      return { ...prev, [colorName]: newValue };
+    });
   };
 
-  const confirmarColores = () => {
-    if (selectedColors.length === 0) {
+  const agregarAlCarrito = () => {
+    if (!selectedProduct) return;
+
+    // Validar que haya colores seleccionados
+    const coloresConCantidad = Object.entries(colorQuantities)
+      .filter(([_, qty]) => qty > 0)
+      .map(([nombre, cantidad]) => ({ nombre, cantidad }));
+
+    if (coloresConCantidad.length === 0) {
       showToast('Selecciona al menos un color', 'warning');
       return;
     }
-    agregarAlCarrito(showColorModal.producto, showColorModal.priceType, selectedColors);
-    setShowColorModal(null);
-    setSelectedColors([]);
-  };
 
-  const getPrecioInfo = (producto, priceType) => {
-    if (priceType === 'listado' && cliente.preciosEspeciales?.[producto.id]) {
-      return { precio: cliente.preciosEspeciales[producto.id], label: 'Listado' };
-    } else if (priceType === 'pieza' && producto.pieza) {
-      return { precio: producto.pieza, label: 'Pieza' };
-    } else if (priceType === 'mayoreo' && producto.mayoreo) {
-      return { precio: producto.mayoreo, label: 'Mayoreo' };
-    } else if (priceType === 'caja' && producto.caja) {
-      return { precio: producto.caja, label: 'Caja' };
-    }
-    return null;
-  };
+    // Validar precio
+    let precio = 0;
+    let tipoLabel = '';
 
-  const agregarAlCarrito = (producto, priceType, colores) => {
-    const info = getPrecioInfo(producto, priceType);
-    if (!info) {
-      showToast('Precio no disponible', 'warning');
+    if (selectedPriceType === 'custom') {
+      if (!customPrice || parseFloat(customPrice) <= 0) {
+        showToast('Ingresa un precio personalizado válido', 'warning');
+        return;
+      }
+      precio = parseFloat(customPrice);
+      tipoLabel = 'personalizado';
+    } else if (selectedPriceType === 'listado' && cliente.preciosEspeciales?.[selectedProduct.id]) {
+      precio = cliente.preciosEspeciales[selectedProduct.id];
+      tipoLabel = 'listado';
+    } else if (selectedPriceType === 'pieza' && selectedProduct.pieza) {
+      precio = selectedProduct.pieza;
+      tipoLabel = 'pieza';
+    } else if (selectedPriceType === 'mayoreo' && selectedProduct.mayoreo) {
+      precio = selectedProduct.mayoreo;
+      tipoLabel = 'mayoreo';
+    } else if (selectedPriceType === 'caja' && selectedProduct.caja) {
+      precio = selectedProduct.caja;
+      tipoLabel = 'caja';
+    } else {
+      showToast('Selecciona un tipo de precio', 'warning');
       return;
     }
 
-    const precio = info.precio;
-    const tipo = info.label.toLowerCase();
+    // Agregar al carrito
+    setCarrito([...carrito, {
+      id: selectedProduct.id,
+      nombre: selectedProduct.nombre,
+      colores: coloresConCantidad,
+      precioUnitario: precio,
+      priceType: tipoLabel,
+      imagen: selectedProduct.imagenes?.[0] || null
+    }]);
 
-    // Crear un key único que incluya colores
-    const coloresKey = colores.sort().join(',');
-    const existente = carrito.find(item => 
-      item.id === producto.id && 
-      item.priceType === tipo && 
-      item.coloresKey === coloresKey
-    );
-
-    if (existente) {
-      setCarrito(carrito.map(item =>
-        item.id === producto.id && item.priceType === tipo && item.coloresKey === coloresKey
-          ? { ...item, cantidad: item.cantidad + 1 }
-          : item
-      ));
-    } else {
-      setCarrito([...carrito, {
-        id: producto.id,
-        nombre: producto.nombre,
-        cantidad: 1,
-        precioUnitario: precio,
-        priceType: tipo,
-        colores: colores,
-        coloresKey: coloresKey,
-        imagen: producto.imagenes?.[0] || null
-      }]);
-    }
-
-    showToast(`${producto.nombre} agregado`, 'success');
+    showToast(`${selectedProduct.nombre} agregado al carrito`, 'success');
+    setSelectedProduct(null);
   };
 
-  const actualizarCantidad = (index, cantidad) => {
-    if (cantidad <= 0) {
-      setCarrito(carrito.filter((_, i) => i !== index));
-    } else {
-      setCarrito(carrito.map((item, i) =>
-        i === index ? { ...item, cantidad } : item
-      ));
-    }
+  const eliminarDelCarrito = (index) => {
+    setCarrito(carrito.filter((_, i) => i !== index));
   };
 
   const getTotal = () => {
-    return carrito.reduce((sum, item) => sum + (item.precioUnitario * item.cantidad), 0);
+    return carrito.reduce((sum, item) => {
+      const totalColorQty = item.colores.reduce((s, c) => s + c.cantidad, 0);
+      return sum + (item.precioUnitario * totalColorQty);
+    }, 0);
+  };
+
+  const getTotalItems = () => {
+    return carrito.reduce((sum, item) => {
+      return sum + item.colores.reduce((s, c) => s + c.cantidad, 0);
+    }, 0);
   };
 
   const handleFinalizarPedido = async () => {
@@ -154,10 +150,9 @@ const CrearPedidoModal = ({ cliente, onClose, onPedidoCreated }) => {
         productos: carrito.map(item => ({
           id: item.id,
           nombre: item.nombre,
-          cantidad: item.cantidad,
+          colores: item.colores,
           precioUnitario: item.precioUnitario,
           priceType: item.priceType,
-          colores: item.colores,
           imagen: item.imagen
         })),
         total,
@@ -189,6 +184,8 @@ const CrearPedidoModal = ({ cliente, onClose, onPedidoCreated }) => {
     ? parseFloat(montoPagado) - getTotal() 
     : 0;
 
+  const tienePrecioListado = selectedProduct && cliente.preciosEspeciales?.[selectedProduct.id];
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
       <div className={`w-full max-w-7xl max-h-[90vh] overflow-hidden rounded-2xl shadow-2xl ${
@@ -215,9 +212,9 @@ const CrearPedidoModal = ({ cliente, onClose, onPedidoCreated }) => {
 
         <div className="p-6 overflow-y-auto max-h-[calc(90vh-250px)]">
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-            {/* Productos - 3 columnas */}
+            {/* Lista de Productos - 3 columnas */}
             <div className="lg:col-span-3">
-              <h3 className="font-semibold text-lg mb-4">Productos Disponibles</h3>
+              <h3 className="font-semibold text-lg mb-4">Productos</h3>
 
               {loading ? (
                 <div className="flex items-center justify-center py-20">
@@ -226,112 +223,43 @@ const CrearPedidoModal = ({ cliente, onClose, onPedidoCreated }) => {
                   }`}></div>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                  {productos.map(producto => {
-                    const tienePrecioListado = cliente.preciosEspeciales?.[producto.id];
-                    
-                    return (
-                      <div
-                        key={producto.id}
-                        className={`rounded-xl border overflow-hidden transition-all hover:shadow-lg ${
-                          isDark ? 'bg-white/5 border-white/10' : 'bg-white border-gray-200'
-                        }`}
-                      >
-                        {/* Imagen */}
-                        <div className="relative aspect-square overflow-hidden bg-gray-100">
-                          {producto.imagenes?.[0] ? (
-                            <img 
-                              src={producto.imagenes[0]} 
-                              alt={producto.nombre} 
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center text-gray-400">
-                              <Box size={48} />
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Info */}
-                        <div className="p-4">
-                          <h4 className="font-bold text-base mb-2 truncate">{producto.nombre}</h4>
-                          
-                          {/* Colores disponibles */}
-                          {producto.colores && producto.colores.length > 0 && (
-                            <div className="flex flex-wrap gap-1 mb-3">
-                              {producto.colores.slice(0, 5).map((color, idx) => {
-                                const colorStr = typeof color === 'string' ? color : color.nombre || color;
-                                return (
-                                  <ColorCircle key={idx} colorName={colorStr} size={16} />
-                                );
-                              })}
-                              {producto.colores.length > 5 && (
-                                <span className="text-xs text-gray-500">+{producto.colores.length - 5}</span>
-                              )}
-                            </div>
-                          )}
-                          
-                          {/* Precios disponibles */}
-                          <div className="space-y-2">
-                            {tienePrecioListado && (
-                              <button
-                                onClick={() => handlePriceClick(producto, 'listado')}
-                                className="w-full flex items-center justify-between px-3 py-2 rounded-lg bg-green-50 border border-green-200 hover:bg-green-100 transition-colors"
-                              >
-                                <div className="flex items-center gap-2">
-                                  <Tag size={14} className="text-green-600" />
-                                  <span className="text-sm font-medium text-green-700">Precio Listado</span>
-                                </div>
-                                <span className="font-bold text-green-700">${cliente.preciosEspeciales[producto.id]}</span>
-                              </button>
-                            )}
-                            
-                            {producto.pieza && (
-                              <button
-                                onClick={() => handlePriceClick(producto, 'pieza')}
-                                className={`w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors ${
-                                  isDark 
-                                    ? 'bg-white/10 hover:bg-white/20 border border-white/20' 
-                                    : 'bg-gray-50 hover:bg-gray-100 border border-gray-200'
-                                }`}
-                              >
-                                <span className="text-sm font-medium">Pieza</span>
-                                <span className="font-bold">${producto.pieza}</span>
-                              </button>
-                            )}
-                            
-                            {producto.mayoreo && (
-                              <button
-                                onClick={() => handlePriceClick(producto, 'mayoreo')}
-                                className={`w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors ${
-                                  isDark 
-                                    ? 'bg-white/10 hover:bg-white/20 border border-white/20' 
-                                    : 'bg-gray-50 hover:bg-gray-100 border border-gray-200'
-                                }`}
-                              >
-                                <span className="text-sm font-medium">Mayoreo</span>
-                                <span className="font-bold">${producto.mayoreo}</span>
-                              </button>
-                            )}
-                            
-                            {producto.caja && (
-                              <button
-                                onClick={() => handlePriceClick(producto, 'caja')}
-                                className={`w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors ${
-                                  isDark 
-                                    ? 'bg-white/10 hover:bg-white/20 border border-white/20' 
-                                    : 'bg-gray-50 hover:bg-gray-100 border border-gray-200'
-                                }`}
-                              >
-                                <span className="text-sm font-medium">Caja</span>
-                                <span className="font-bold">${producto.caja}</span>
-                              </button>
+                <div className="space-y-2">
+                  {productos.map(producto => (
+                    <button
+                      key={producto.id}
+                      onClick={() => openProductDetail(producto)}
+                      className={`w-full flex items-center gap-4 p-4 rounded-lg border transition-all text-left ${
+                        isDark
+                          ? 'bg-white/5 border-white/10 hover:bg-white/10'
+                          : 'bg-white border-gray-200 hover:bg-gray-50'
+                      }`}
+                    >
+                      <div className="w-16 h-16 rounded overflow-hidden flex-shrink-0 bg-gray-100">
+                        {producto.imagenes?.[0] ? (
+                          <img src={producto.imagenes[0]} alt={producto.nombre} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-gray-400">
+                            <ImageIcon size={24} />
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-base">{producto.nombre}</h4>
+                        {producto.colores && producto.colores.length > 0 && (
+                          <div className="flex gap-1 mt-1">
+                            {producto.colores.slice(0, 5).map((color, idx) => {
+                              const colorStr = typeof color === 'string' ? color : color.nombre;
+                              return <ColorCircle key={idx} colorName={colorStr} size={16} />;
+                            })}
+                            {producto.colores.length > 5 && (
+                              <span className="text-xs text-gray-500">+{producto.colores.length - 5}</span>
                             )}
                           </div>
-                        </div>
+                        )}
                       </div>
-                    );
-                  })}
+                      <ChevronRight size={20} className={isDark ? 'text-gray-400' : 'text-gray-500'} />
+                    </button>
+                  ))}
                 </div>
               )}
             </div>
@@ -347,18 +275,15 @@ const CrearPedidoModal = ({ cliente, onClose, onPedidoCreated }) => {
                   <span className={`ml-auto text-sm ${
                     isDark ? 'text-gray-400' : 'text-gray-600'
                   }`}>
-                    {carrito.reduce((sum, item) => sum + item.cantidad, 0)} items
+                    {getTotalItems()} items
                   </span>
                 </div>
 
-                <div className="space-y-2 mb-4 max-h-[400px] overflow-y-auto">
+                <div className="space-y-2 mb-4 max-h-[300px] overflow-y-auto">
                   {carrito.length === 0 ? (
-                    <div className="text-center py-12">
-                      <ShoppingCart size={48} className={`mx-auto mb-3 ${
-                        isDark ? 'text-gray-600' : 'text-gray-300'
-                      }`} />
+                    <div className="text-center py-8">
                       <p className={`text-sm ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
-                        Carrito vacío
+                        Vacío
                       </p>
                     </div>
                   ) : (
@@ -366,50 +291,25 @@ const CrearPedidoModal = ({ cliente, onClose, onPedidoCreated }) => {
                       <div key={idx} className={`p-3 rounded-lg border ${
                         isDark ? 'bg-white/5 border-white/10' : 'bg-white border-gray-200'
                       }`}>
-                        <div className="flex items-start gap-2 mb-2">
-                          <div className="flex-1 min-w-0">
-                            <p className="font-semibold text-sm truncate">{item.nombre}</p>
-                            <p className="text-xs text-green-600 capitalize">{item.priceType}</p>
-                            {item.colores && item.colores.length > 0 && (
-                              <div className="flex flex-wrap gap-1 mt-1">
-                                {item.colores.map((color, i) => (
-                                  <span key={i} className="text-xs px-1.5 py-0.5 rounded bg-blue-100 text-blue-700">
-                                    {color}
-                                  </span>
-                                ))}
-                              </div>
-                            )}
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex-1">
+                            <p className="font-semibold text-sm">{item.nombre}</p>
+                            <p className="text-xs text-green-600 capitalize">{item.priceType} - ${item.precioUnitario}</p>
                           </div>
                           <button
-                            onClick={() => actualizarCantidad(idx, 0)}
+                            onClick={() => eliminarDelCarrito(idx)}
                             className="text-red-500 hover:text-red-600 p-1"
                           >
                             <Trash2 size={14} />
                           </button>
                         </div>
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <button
-                              onClick={() => actualizarCantidad(idx, item.cantidad - 1)}
-                              className={`p-1 rounded ${
-                                isDark ? 'hover:bg-white/10' : 'hover:bg-black/5'
-                              }`}
-                            >
-                              <Minus size={14} />
-                            </button>
-                            <span className="text-sm font-bold w-8 text-center">{item.cantidad}</span>
-                            <button
-                              onClick={() => actualizarCantidad(idx, item.cantidad + 1)}
-                              className={`p-1 rounded ${
-                                isDark ? 'hover:bg-white/10' : 'hover:bg-black/5'
-                              }`}
-                            >
-                              <Plus size={14} />
-                            </button>
-                          </div>
-                          <span className="text-sm font-bold">
-                            ${(item.precioUnitario * item.cantidad).toFixed(2)}
-                          </span>
+                        <div className="space-y-1">
+                          {item.colores.map((color, i) => (
+                            <div key={i} className="text-xs flex items-center justify-between">
+                              <span>- {color.nombre}</span>
+                              <span className="font-semibold">x{color.cantidad}</span>
+                            </div>
+                          ))}
                         </div>
                       </div>
                     ))
@@ -429,10 +329,10 @@ const CrearPedidoModal = ({ cliente, onClose, onPedidoCreated }) => {
                     value={montoPagado}
                     onChange={(e) => setMontoPagado(e.target.value)}
                     placeholder="Monto pagado"
-                    className={`w-full px-4 py-3 rounded-lg border outline-none transition-all ${
+                    className={`w-full px-4 py-3 rounded-lg border outline-none ${
                       isDark
-                        ? 'bg-white/5 border-white/10 text-white placeholder-gray-500'
-                        : 'bg-white border-gray-200 text-black placeholder-gray-400'
+                        ? 'bg-white/5 border-white/10 text-white'
+                        : 'bg-white border-gray-200'
                     }`}
                   />
                   
@@ -465,75 +365,207 @@ const CrearPedidoModal = ({ cliente, onClose, onPedidoCreated }) => {
         </div>
       </div>
 
-      {/* Modal de Selección de Colores */}
-      {showColorModal && (
+      {/* Modal Detalle de Producto */}
+      {selectedProduct && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-          <div className={`w-full max-w-md rounded-2xl shadow-2xl overflow-hidden ${
+          <div className={`w-full max-w-2xl max-h-[85vh] overflow-hidden rounded-2xl shadow-2xl ${
             isDark ? 'bg-zinc-900' : 'bg-white'
           }`}>
             <div className={`p-6 border-b ${
               isDark ? 'border-white/10' : 'border-gray-200'
             }`}>
-              <h3 className="text-xl font-bold mb-2">Selecciona los colores</h3>
-              <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                {showColorModal.producto.nombre}
-              </p>
-            </div>
-            <div className="p-6">
-              <div className="grid grid-cols-2 gap-3">
-                {showColorModal.producto.colores.map((color, idx) => {
-                  const colorStr = typeof color === 'string' ? color : color.nombre || color;
-                  const isSelected = selectedColors.includes(colorStr);
-                  
-                  return (
-                    <button
-                      key={idx}
-                      onClick={() => toggleColor(color)}
-                      className={`flex items-center gap-3 p-3 rounded-lg border-2 transition-all ${
-                        isSelected
-                          ? 'border-blue-500 bg-blue-50'
-                          : isDark
-                            ? 'border-white/10 hover:border-white/30'
-                            : 'border-gray-200 hover:border-gray-400'
-                      }`}
-                    >
-                      <ColorCircle colorName={colorStr} size={24} />
-                      <span className={`flex-1 text-left font-medium ${
-                        isSelected ? 'text-blue-700' : ''
-                      }`}>
-                        {colorStr}
-                      </span>
-                      {isSelected && <Check size={18} className="text-blue-600" />}
-                    </button>
-                  );
-                })}
+              <div className="flex items-start justify-between">
+                <div>
+                  <h3 className="text-2xl font-bold">{selectedProduct.nombre}</h3>
+                  <p className={`text-sm mt-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                    {selectedProduct.descripcion}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setSelectedProduct(null)}
+                  className={`p-2 rounded-full ${
+                    isDark ? 'hover:bg-white/10' : 'hover:bg-black/5'
+                  }`}
+                >
+                  <X size={20} />
+                </button>
               </div>
             </div>
+
+            <div className="p-6 overflow-y-auto max-h-[calc(85vh-250px)]">
+              {/* Imágenes */}
+              {selectedProduct.imagenes && selectedProduct.imagenes.length > 0 && (
+                <div className="mb-6">
+                  <h4 className="font-semibold mb-3">Fotos</h4>
+                  <div className="flex gap-2 overflow-x-auto pb-2">
+                    {selectedProduct.imagenes.map((img, idx) => (
+                      <img
+                        key={idx}
+                        src={img}
+                        alt={`${selectedProduct.nombre} ${idx + 1}`}
+                        className="w-24 h-24 object-cover rounded-lg border"
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Colores */}
+              {selectedProduct.colores && selectedProduct.colores.length > 0 && (
+                <div className="mb-6">
+                  <h4 className="font-semibold mb-3">Colores disponibles</h4>
+                  <div className="space-y-2">
+                    {selectedProduct.colores.map((color, idx) => {
+                      const colorStr = typeof color === 'string' ? color : color.nombre;
+                      const qty = colorQuantities[colorStr] || 0;
+                      
+                      return (
+                        <div
+                          key={idx}
+                          className={`flex items-center justify-between p-3 rounded-lg border ${
+                            isDark ? 'bg-white/5 border-white/10' : 'bg-gray-50 border-gray-200'
+                          }`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <ColorCircle colorName={colorStr} size={24} />
+                            <span className="font-medium">{colorStr}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => updateColorQuantity(colorStr, -1)}
+                              className={`p-1.5 rounded ${
+                                isDark ? 'hover:bg-white/10' : 'hover:bg-black/5'
+                              }`}
+                            >
+                              <Minus size={16} />
+                            </button>
+                            <span className="font-bold w-8 text-center">{qty}</span>
+                            <button
+                              onClick={() => updateColorQuantity(colorStr, 1)}
+                              className={`p-1.5 rounded ${
+                                isDark ? 'hover:bg-white/10' : 'hover:bg-black/5'
+                              }`}
+                            >
+                              <Plus size={16} />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Opciones de Precio */}
+              <div className="mb-6">
+                <h4 className="font-semibold mb-3">Tipo de Precio</h4>
+                
+                {/* Precio Personalizado */}
+                <div className={`mb-3 p-4 rounded-lg border ${
+                  selectedPriceType === 'custom'
+                    ? 'border-blue-500 bg-blue-50'
+                    : isDark ? 'bg-white/5 border-white/10' : 'bg-gray-50 border-gray-200'
+                }`}>
+                  <label className="flex items-center gap-2 mb-2">
+                    <input
+                      type="radio"
+                      checked={selectedPriceType === 'custom'}
+                      onChange={() => setSelectedPriceType('custom')}
+                      className="w-4 h-4"
+                    />
+                    <span className="font-medium">Precio Personalizado</span>
+                  </label>
+                  <input
+                    type="number"
+                    value={customPrice}
+                    onChange={(e) => setCustomPrice(e.target.value)}
+                    placeholder="Ingresa precio"
+                    disabled={selectedPriceType !== 'custom'}
+                    className={`w-full px-3 py-2 rounded border outline-none ${
+                      selectedPriceType !== 'custom' ? 'opacity-50' : ''
+                    } ${
+                      isDark ? 'bg-white/5 border-white/10 text-white' : 'bg-white border-gray-200'
+                    }`}
+                  />
+                </div>
+
+                {/* Otras opciones */}
+                <div className="grid grid-cols-2 gap-3">
+                  {tienePrecioListado && (
+                    <button
+                      onClick={() => setSelectedPriceType('listado')}
+                      className={`p-3 rounded-lg border text-left ${
+                        selectedPriceType === 'listado'
+                          ? 'border-green-500 bg-green-50'
+                          : 'border-green-200 bg-green-50/50'
+                      }`}
+                    >
+                      <div className="text-sm text-green-700 font-medium">Listado</div>
+                      <div className="text-lg font-bold text-green-800">${cliente.preciosEspeciales[selectedProduct.id]}</div>
+                    </button>
+                  )}
+                  {selectedProduct.pieza && (
+                    <button
+                      onClick={() => setSelectedPriceType('pieza')}
+                      className={`p-3 rounded-lg border text-left ${
+                        selectedPriceType === 'pieza'
+                          ? isDark ? 'border-white bg-white/20' : 'border-black bg-black/5'
+                          : isDark ? 'border-white/10 bg-white/5' : 'border-gray-200 bg-gray-50'
+                      }`}
+                    >
+                      <div className="text-sm font-medium">Pieza</div>
+                      <div className="text-lg font-bold">${selectedProduct.pieza}</div>
+                    </button>
+                  )}
+                  {selectedProduct.mayoreo && (
+                    <button
+                      onClick={() => setSelectedPriceType('mayoreo')}
+                      className={`p-3 rounded-lg border text-left ${
+                        selectedPriceType === 'mayoreo'
+                          ? isDark ? 'border-white bg-white/20' : 'border-black bg-black/5'
+                          : isDark ? 'border-white/10 bg-white/5' : 'border-gray-200 bg-gray-50'
+                      }`}
+                    >
+                      <div className="text-sm font-medium">Mayoreo</div>
+                      <div className="text-lg font-bold">${selectedProduct.mayoreo}</div>
+                    </button>
+                  )}
+                  {selectedProduct.caja && (
+                    <button
+                      onClick={() => setSelectedPriceType('caja')}
+                      className={`p-3 rounded-lg border text-left ${
+                        selectedPriceType === 'caja'
+                          ? isDark ? 'border-white bg-white/20' : 'border-black bg-black/5'
+                          : isDark ? 'border-white/10 bg-white/5' : 'border-gray-200 bg-gray-50'
+                      }`}
+                    >
+                      <div className="text-sm font-medium">Caja</div>
+                      <div className="text-lg font-bold">${selectedProduct.caja}</div>
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Footer con botón Añadir */}
             <div className={`p-6 border-t flex gap-3 ${
               isDark ? 'border-white/10' : 'border-gray-200'
             }`}>
               <button
-                onClick={() => {
-                  setShowColorModal(null);
-                  setSelectedColors([]);
-                }}
-                className={`flex-1 px-4 py-3 rounded-lg font-medium transition-colors ${
-                  isDark
-                    ? 'bg-white/10 hover:bg-white/20'
-                    : 'bg-gray-100 hover:bg-gray-200'
+                onClick={() => setSelectedProduct(null)}
+                className={`flex-1 px-4 py-3 rounded-lg font-medium ${
+                  isDark ? 'bg-white/10 hover:bg-white/20' : 'bg-gray-100 hover:bg-gray-200'
                 }`}
               >
                 Cancelar
               </button>
               <button
-                onClick={confirmarColores}
-                className={`flex-1 px-4 py-3 rounded-lg font-medium transition-colors ${
-                  isDark
-                    ? 'bg-white text-black hover:bg-gray-200'
-                    : 'bg-black text-white hover:bg-gray-800'
+                onClick={agregarAlCarrito}
+                className={`flex-1 px-4 py-3 rounded-lg font-bold ${
+                  isDark ? 'bg-white text-black hover:bg-gray-200' : 'bg-black text-white hover:bg-gray-800'
                 }`}
               >
-                Agregar ({selectedColors.length})
+                Añadir al Carrito
               </button>
             </div>
           </div>
