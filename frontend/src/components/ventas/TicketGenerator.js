@@ -113,13 +113,13 @@ const TicketGenerator = ({ pedido, onClose }) => {
 
             {/* Tabla de productos */}
             <div className="mb-3">
-              <table className="w-full text-xs" style={{ tableLayout: 'fixed' }}>
+              <table className="w-full text-xs" style={{ tableLayout: 'fixed', borderCollapse: 'separate', borderSpacing: '0' }}>
                 <thead>
-                  <tr className="border-b border-black">
-                    <th className="text-left font-bold pb-1" style={{ width: '35%' }}>PRODUCTO</th>
-                    <th className="text-center font-bold pb-1" style={{ width: '20%' }}>CANTIDAD</th>
-                    <th className="text-right font-bold pb-1" style={{ width: '22%' }}>P/PIEZA</th>
-                    <th className="text-right font-bold pb-1" style={{ width: '23%' }}>TOTAL</th>
+                  <tr>
+                    <th className="text-left font-bold pb-2" style={{ width: '40%' }}>PRODUCTO</th>
+                    <th className="text-center font-bold pb-2" style={{ width: '18%' }}>CANTIDAD</th>
+                    <th className="text-right font-bold pb-2" style={{ width: '20%' }}>P/PIEZA</th>
+                    <th className="text-right font-bold pb-2" style={{ width: '22%' }}>TOTAL</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -129,18 +129,18 @@ const TicketGenerator = ({ pedido, onClose }) => {
                     
                     return (
                       <React.Fragment key={index}>
-                        <tr className="border-b border-gray-300">
-                          <td className="py-2 align-top" style={{ wordWrap: 'break-word' }}>
+                        <tr>
+                          <td className="pt-2 pb-1 align-top" style={{ wordWrap: 'break-word' }}>
                             <span className="font-semibold">{producto.nombre}</span>
                           </td>
-                          <td className="py-2 text-center align-top">{totalQty}</td>
-                          <td className="py-2 text-right align-top">${producto.precioUnitario.toFixed(2)}</td>
-                          <td className="py-2 text-right align-top font-bold">${totalPrice.toFixed(2)}</td>
+                          <td className="pt-2 pb-1 text-center align-top">{totalQty}</td>
+                          <td className="pt-2 pb-1 text-right align-top">${producto.precioUnitario.toFixed(2)}</td>
+                          <td className="pt-2 pb-1 text-right align-top font-bold">${totalPrice.toFixed(2)}</td>
                         </tr>
                         {producto.colores && producto.colores.length > 0 && producto.colores.map((color, i) => (
                           <tr key={`${index}-${i}`}>
-                            <td colSpan="4" className="pb-1">
-                              <div className="flex justify-between items-center text-[10px] ml-2">
+                            <td colSpan="4" className="pb-1 pl-2">
+                              <div className="flex justify-between items-center text-[10px]">
                                 <span>- {color.nombre}</span>
                                 <span className="font-semibold">(x{color.cantidad})</span>
                               </div>
@@ -152,14 +152,6 @@ const TicketGenerator = ({ pedido, onClose }) => {
                   })}
                 </tbody>
               </table>
-            </div>
-
-            {/* Nota de productos */}
-            <div className="text-center text-xs font-bold my-4" style={{ lineHeight: '1.4' }}>
-              <p>PRODUCTOS</p>
-              <p>EL LARGO DE ESTE ESPACIO</p>
-              <p>DEPENDE DE LA CANTIDAD</p>
-              <p>DE PRODUCTOS</p>
             </div>
 
             <div className="border-t-2 border-black my-3"></div>
