@@ -64,105 +64,99 @@ const TicketGenerator = ({ pedido, onClose }) => {
           </button>
         </div>
 
-        <div className="p-4 max-h-[60vh] overflow-y-auto">
+        <div className="p-4 max-h-[70vh] overflow-y-auto">
+          {/* TICKET */}
           <div
             ref={ticketRef}
-            className="bg-white text-black p-6"
-            style={{ width: '300px', margin: '0 auto', fontFamily: 'Arial, sans-serif' }}
+            className="bg-white text-black p-6 mx-auto"
+            style={{ maxWidth: '400px', fontFamily: 'Arial, sans-serif' }}
           >
-            {/* Header con logo */}
-            <div className="flex items-start justify-between mb-3">
+            {/* 1. HEADER */}
+            <div className="flex justify-between items-start mb-4">
+              {/* Izquierda */}
               <div>
-                <h1 className="text-xl font-bold" style={{ letterSpacing: '2px' }}>JessicaAleSuarez</h1>
-                <div className="text-xs mt-1" style={{ lineHeight: '1.3' }}>
+                <h1 className="font-extrabold text-xl leading-tight">JessicaAleSuarez</h1>
+                <div className="text-xs mt-1 leading-tight">
                   <p>Plaza de la Tecnología</p>
                   <p>Local 26 Entrada sobre Uruguay 11</p>
                   <p>Con salida al pasillo 2</p>
                 </div>
               </div>
-              <div className="border-2 border-black rounded-full w-12 h-12 flex items-center justify-center flex-shrink-0">
-                <span className="text-2xl font-bold italic">J</span>
+              {/* Derecha - Logo SVG */}
+              <div className="flex-shrink-0">
+                <svg width="60" height="60" viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M30 5 L55 30 L30 55 L5 30 Z" stroke="black" strokeWidth="2" fill="none"/>
+                  <text x="30" y="38" fontSize="28" fontWeight="bold" fontStyle="italic" textAnchor="middle" fill="black">J</text>
+                </svg>
               </div>
             </div>
 
-            <div className="border-t-2 border-black my-3"></div>
+            {/* 2. SEPARADOR 1 */}
+            <div className="w-4/5 mx-auto border-b-2 border-black mb-4"></div>
 
-            {/* Cliente */}
-            <div className="mb-3">
-              <div className="text-sm font-semibold">Cliente:</div>
-              <div className="text-2xl font-bold mt-1" style={{ letterSpacing: '1px' }}>{pedido.cliente}</div>
+            {/* 3. DATOS DE LA ORDEN */}
+            <div className="mb-4">
+              <p className="font-bold text-sm">Cliente:</p>
+              <p className="font-extrabold text-3xl uppercase my-2">{pedido.cliente}</p>
+              <div className="text-sm space-y-0.5">
+                <p>Usuario: GMAIL LOGIN</p>
+                <p>Fecha: {formatDate(pedido.fecha)}</p>
+                <p>No. {pedido.numero || 'N/A'}</p>
+              </div>
             </div>
 
-            {/* Usuario, Fecha, No */}
-            <div className="text-xs mb-3" style={{ lineHeight: '1.6' }}>
+            {/* 4. SEPARADOR 2 */}
+            <div className="w-1/2 mx-auto border-b-2 border-black mb-4"></div>
+
+            {/* 5. LISTADO DE PRODUCTOS (CSS GRID) */}
+            <div className="mb-4">
+              {/* Headers */}
+              <div className="grid grid-cols-4 gap-2 text-xs uppercase font-bold mb-2">
+                <div className="col-span-1">PRODUCTO</div>
+                <div className="text-center">CANTIDAD</div>
+                <div className="text-center">P/PIEZA</div>
+                <div className="text-center">TOTAL</div>
+              </div>
+
+              {/* Productos */}
+              <div className="text-xs">
+                {pedido.productos.map((producto, index) => (
+                  <div key={index} className="mb-3">
+                    {/* Nombre del producto */}
+                    <div className="font-bold mb-1">{producto.nombre}</div>
+                    
+                    {/* Variantes/Colores */}
+                    {producto.colores && producto.colores.length > 0 ? (
+                      producto.colores.map((color, i) => {
+                        const totalColor = producto.precioUnitario * color.cantidad;
+                        return (
+                          <div key={i} className="grid grid-cols-4 gap-2 mb-0.5">
+                            <div className="col-span-1 pl-2">• {color.nombre}</div>
+                            <div className="text-center">{color.cantidad}</div>
+                            <div className="text-center">${producto.precioUnitario.toFixed(2)}</div>
+                            <div className="text-center font-bold">${totalColor.toFixed(2)}</div>
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <div className="grid grid-cols-4 gap-2 mb-0.5">
+                        <div className="col-span-1 pl-2">• N/A</div>
+                        <div className="text-center">1</div>
+                        <div className="text-center">${producto.precioUnitario.toFixed(2)}</div>
+                        <div className="text-center font-bold">${producto.precioUnitario.toFixed(2)}</div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* 6. SEPARADOR 3 */}
+            <div className="w-1/2 mx-auto border-b-2 border-black mb-4"></div>
+
+            {/* 7. TOTALES */}
+            <div className="text-sm mb-4 space-y-1">
               <div className="flex justify-between">
-                <span className="font-semibold">Usuario:</span>
-                <span>GMAIL LOGIN</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="font-semibold">Fecha:</span>
-                <span>{formatDate(pedido.fecha)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="font-semibold">No.</span>
-                <span>{pedido.numero || 'N/A'}</span>
-              </div>
-            </div>
-
-            <div className="border-t-2 border-black my-3"></div>
-
-            {/* Tabla de productos */}
-            <div className="mb-3">
-              <table className="w-full text-xs" style={{ tableLayout: 'fixed', borderCollapse: 'separate', borderSpacing: '0' }}>
-                <thead>
-                  <tr>
-                    <th className="text-left font-bold pb-2" style={{ width: '40%' }}>PRODUCTO</th>
-                    <th className="text-center font-bold pb-2" style={{ width: '18%' }}>CANTIDAD</th>
-                    <th className="text-center font-bold pb-2" style={{ width: '20%' }}>P/PIEZA</th>
-                    <th className="text-center font-bold pb-2" style={{ width: '22%' }}>TOTAL</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {pedido.productos.map((producto, index) => (
-                    <React.Fragment key={index}>
-                      {/* Nombre del producto */}
-                      <tr>
-                        <td colSpan="4" className="pt-3 pb-0 font-bold">
-                          {producto.nombre}
-                        </td>
-                      </tr>
-                      {/* Colores */}
-                      {producto.colores && producto.colores.length > 0 ? (
-                        producto.colores.map((color, i) => {
-                          const totalColor = producto.precioUnitario * color.cantidad;
-                          return (
-                            <tr key={`${index}-${i}`}>
-                              <td className="pb-1 pl-2 text-[10px]">- {color.nombre}</td>
-                              <td className="pb-1 text-center">{color.cantidad}</td>
-                              <td className="pb-1 text-center">${producto.precioUnitario.toFixed(2)}</td>
-                              <td className="pb-1 text-center font-bold">${totalColor.toFixed(2)}</td>
-                            </tr>
-                          );
-                        })
-                      ) : (
-                        <tr>
-                          <td className="pb-1 pl-2 text-[10px]">- N/A</td>
-                          <td className="pb-1 text-center">1</td>
-                          <td className="pb-1 text-center">${producto.precioUnitario.toFixed(2)}</td>
-                          <td className="pb-1 text-center font-bold">${producto.precioUnitario.toFixed(2)}</td>
-                        </tr>
-                      )}
-                    </React.Fragment>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            <div className="border-t-2 border-black my-3"></div>
-
-            {/* Totales */}
-            <div className="text-sm mb-3">
-              <div className="flex justify-between mb-1">
                 <span>Total de artículos:</span>
                 <span className="font-bold">
                   {pedido.productos.reduce((sum, p) => {
@@ -170,23 +164,24 @@ const TicketGenerator = ({ pedido, onClose }) => {
                   }, 0)}
                 </span>
               </div>
-              <div className="flex justify-between font-bold text-base">
+              <div className="flex justify-between text-base">
                 <span>Precio total con IVA:</span>
-                <span>${pedido.total.toFixed(2)}</span>
+                <span className="font-bold">${pedido.total.toFixed(2)}</span>
               </div>
             </div>
 
-            <div className="border-t-2 border-black my-3"></div>
+            {/* 8. SEPARADOR 4 */}
+            <div className="w-1/2 mx-auto border-b-2 border-black mb-4"></div>
 
-            {/* Garantía */}
-            <div className="text-[9px] text-center" style={{ lineHeight: '1.5' }}>
-              <p className="font-bold text-[10px] mb-1">7 DÍAS DE GARANTÍA CON TICKET ORIGINAL</p>
+            {/* 9. FOOTER (TÉRMINOS) */}
+            <div className="text-xs uppercase leading-tight text-center">
+              <p className="font-bold mb-1">7 DÍAS DE GARANTÍA CON TICKET ORIGINAL</p>
               <p>(REPARACIÓN) ES PIEZAS NO ROTO NO</p>
               <p>DEFECTOS DE FÁBRICA NO ROTO NO</p>
               <p>MALTRATADO NO HAY CAMBIOS NI</p>
               <p>DEVOLUCIONES MENORES A $50 MXN NO HAY</p>
               <p>GARANTÍA</p>
-              <p className="font-bold text-[10px] mt-2">DE LUNES A SÁBADO DE 11AM A 6PM</p>
+              <p className="font-bold mt-2">DE LUNES A SÁBADO DE 11AM A 6PM</p>
             </div>
           </div>
         </div>
