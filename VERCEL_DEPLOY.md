@@ -41,16 +41,19 @@ git push -u origin main
 ### 3. Configurar el Proyecto
 
 **Framework Preset:** 
-- Selecciona `Create React App`
+- Selecciona `Other` (no Create React App)
 
 **Root Directory:**
-- Cambia a `frontend` (importante!)
+- Deja en raíz: `.` (punto)
 
 **Build Command:**
-- Deja por defecto: `npm run build` o `yarn build`
+- Copia esto EXACTAMENTE: `cd frontend && npm install --legacy-peer-deps && npm run build`
 
 **Output Directory:**
-- Deja por defecto: `build`
+- Copia esto: `frontend/build`
+
+**Install Command:**
+- Copia esto: `cd frontend && npm install --legacy-peer-deps`
 
 ### 4. Variables de Entorno
 
