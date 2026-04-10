@@ -298,19 +298,34 @@ const CarritoPanel = ({ onPedidoCreated }) => {
                   }`}
                 />
               </div>
-              {/* Adeudo */}
-              {adeudo > 0 && (
+
+              {/* Adeudo o Cambio */}
+              {montoPagado && parseFloat(montoPagado) !== total && (
                 <div className={`p-4 rounded-lg ${
-                  isDark ? 'bg-red-500/10 border border-red-500/20' : 'bg-red-50 border border-red-200'
+                  parseFloat(montoPagado) < total
+                    ? isDark ? 'bg-red-500/10 border border-red-500/20' : 'bg-red-50 border border-red-200'
+                    : isDark ? 'bg-green-500/10 border border-green-500/20' : 'bg-green-50 border border-green-200'
                 }`}>
-                  <div  className="flex justify-between items-center">
-                    <span  className="text-red-500 font-medium">Adeudo:</span>
-                    <span  className="text-red-500 font-bold text-lg">
-                      ${adeudo.toFixed(2)}
-                    </span>
+                  <div className="flex justify-between items-center">
+                    {parseFloat(montoPagado) < total ? (
+                      <>
+                        <span className="text-red-500 font-medium">Adeudo:</span>
+                        <span className="text-red-500 font-bold text-lg">
+                          ${adeudo.toFixed(2)}
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="text-green-600 font-medium">Cambio:</span>
+                        <span className="text-green-600 font-bold text-lg">
+                          ${(parseFloat(montoPagado) - total).toFixed(2)}
+                        </span>
+                      </>
+                    )}
                   </div>
                 </div>
               )}
+
               {/* Nombre Cliente (para adeudos) */}
               {adeudo > 0 && clientName === 'LOCAL' && (
                 <div>
