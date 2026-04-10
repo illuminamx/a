@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { useToast } from '../components/Toast';
-import { X, Upload, Trash2, Plus, ZoomIn, ZoomOut } from 'lucide-react';
+import { X, Upload, Trash2, Plus } from 'lucide-react';
 import axios from 'axios';
+import ImageEditor from './ImageEditor';
 
 const IMGBB_API_KEY = '565bfd923ef367e0a4de22ec987bc64e';
 
@@ -20,8 +21,6 @@ const ProductFormModal = ({ product, onSave, onClose }) => {
   });
   const [colorInput, setColorInput] = useState('');
   const [uploading, setUploading] = useState(false);
-  const [imageZoom, setImageZoom] = useState({});
-  const [imagePosition, setImagePosition] = useState({});
   const fileInputRef = useRef(null);
 
   useEffect(() => {
@@ -120,13 +119,6 @@ const ProductFormModal = ({ product, onSave, onClose }) => {
         ...prev,
         imagenes: [...prev.imagenes, ...urls]
       }));
-
-      // Initialize zoom and position for new images
-      urls.forEach((url, index) => {
-        const imgIndex = formData.imagenes.length + index;
-        setImageZoom(prev => ({ ...prev, [imgIndex]: 1 }));
-        setImagePosition(prev => ({ ...prev, [imgIndex]: { x: 0, y: 0 } }));
-      });
       
       showToast('Imágenes subidas correctamente (convertidas a WebP)', 'success');
     } catch (error) {
@@ -140,13 +132,6 @@ const ProductFormModal = ({ product, onSave, onClose }) => {
     setFormData(prev => ({
       ...prev,
       imagenes: prev.imagenes.filter((_, i) => i !== index)
-    }));
-  };
-
-  const handleZoomChange = (index, delta) => {
-    setImageZoom(prev => ({
-      ...prev,
-      [index]: Math.max(0.5, Math.min(3, (prev[index] || 1) + delta))
     }));
   };
 
@@ -384,46 +369,13 @@ const ProductFormModal = ({ product, onSave, onClose }) => {
             {formData.imagenes.length > 0 && (
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4">
                 {formData.imagenes.map((url, index) => (
-                  <div
+                  <ImageEditor
                     key={index}
-                    className={`relative rounded-lg overflow-hidden border ${
-                      isDark ? 'border-white/10' : 'border-gray-200'
-                    }`}
-                  >
-                    <div className="aspect-square overflow-hidden">
-                      <img
-                        src={url}
-                        alt={`Imagen ${index + 1}`}
-                        className="w-full h-full object-cover"
-                        style={{
-                          transform: `scale(${imageZoom[index] || 1})`
-                        }}
-                      />
-                    </div>
-                    <div className="absolute top-2 right-2 flex gap-1">
-                      <button
-                        type="button"
-                        onClick={() => handleZoomChange(index, 0.1)}
-                        className="p-1.5 rounded-full bg-black/50 hover:bg-black/70 text-white"
-                      >
-                        <ZoomIn size={14} />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleZoomChange(index, -0.1)}
-                        className="p-1.5 rounded-full bg-black/50 hover:bg-black/70 text-white"
-                      >
-                        <ZoomOut size={14} />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveImage(index)}
-                        className="p-1.5 rounded-full bg-red-500/80 hover:bg-red-500 text-white"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-                  </div>
+                    url={url}
+                    index={index}
+                    isDark={isDark}
+                    onRemove={() => handleRemoveImage(index)}
+                  />
                 ))}
               </div>
             )}

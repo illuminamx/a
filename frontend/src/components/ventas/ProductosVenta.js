@@ -140,43 +140,43 @@ const ProductosVenta = () => {
                   {product.pieza && (
                     <button
                       onClick={() => handleAddToCart(product, 'pieza')}
-                      className={`w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors ${
+                      className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
                         isDark
                           ? 'bg-white/10 hover:bg-white/20'
                           : 'bg-black/5 hover:bg-black/10'
                       }`}
                     >
-                      <span className="text-sm">Pieza</span>
-                      <span className="font-semibold">${product.pieza}</span>
-                      <Plus size={16} />
+                      <span className="text-sm flex-shrink-0">Pieza</span>
+                      <span className="font-semibold flex-1 text-right">${product.pieza}</span>
+                      <Plus size={16} className="flex-shrink-0" />
                     </button>
                   )}
                   {product.mayoreo && (
                     <button
                       onClick={() => handleAddToCart(product, 'mayoreo')}
-                      className={`w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors ${
+                      className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
                         isDark
                           ? 'bg-white/10 hover:bg-white/20'
                           : 'bg-black/5 hover:bg-black/10'
                       }`}
                     >
-                      <span className="text-sm">Mayoreo</span>
-                      <span className="font-semibold">${product.mayoreo}</span>
-                      <Plus size={16} />
+                      <span className="text-sm flex-shrink-0">Mayoreo</span>
+                      <span className="font-semibold flex-1 text-right">${product.mayoreo}</span>
+                      <Plus size={16} className="flex-shrink-0" />
                     </button>
                   )}
                   {product.caja && (
                     <button
                       onClick={() => handleAddToCart(product, 'caja')}
-                      className={`w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors ${
+                      className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
                         isDark
                           ? 'bg-white/10 hover:bg-white/20'
                           : 'bg-black/5 hover:bg-black/10'
                       }`}
                     >
-                      <span className="text-sm">Caja</span>
-                      <span className="font-semibold">${product.caja}</span>
-                      <Plus size={16} />
+                      <span className="text-sm flex-shrink-0">Caja</span>
+                      <span className="font-semibold flex-1 text-right">${product.caja}</span>
+                      <Plus size={16} className="flex-shrink-0" />
                     </button>
                   )}
                 </div>

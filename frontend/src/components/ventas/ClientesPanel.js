@@ -3,7 +3,7 @@ import { addDoc, updateDoc, deleteDoc, doc, collection } from 'firebase/firestor
 import { db } from '../../firebase';
 import { useTheme } from '../../context/ThemeContext';
 import { useToast } from '../Toast';
-import { Plus, Edit2, Trash2, MoreVertical, X, DollarSign } from 'lucide-react';
+import { Plus, Edit2, Trash2, MoreVertical, X, DollarSign, Search } from 'lucide-react';
 
 const ClientesPanel = ({ clientes, onClientesChange }) => {
   const { isDark } = useTheme();
@@ -12,6 +12,12 @@ const ClientesPanel = ({ clientes, onClientesChange }) => {
   const [editingCliente, setEditingCliente] = useState(null);
   const [showMenuId, setShowMenuId] = useState(null);
   const [clienteName, setClienteName] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+
+  // Filtrar clientes
+  const filteredClientes = clientes.filter(cliente =>
+    cliente.nombre?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   const handleAddCliente = async () => {
     if (!clienteName.trim()) {
@@ -81,19 +87,38 @@ const ClientesPanel = ({ clientes, onClientesChange }) => {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-semibold">Clientes ({clientes.length})</h2>
-        <button
-          onClick={() => setShowAddModal(true)}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
-            isDark
-              ? 'bg-white text-black hover:bg-gray-200'
-              : 'bg-black text-white hover:bg-gray-800'
-          }`}
-        >
-          <Plus size={18} />
-          Agregar Cliente
-        </button>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+        <h2 className="text-xl font-semibold">Clientes ({filteredClientes.length})</h2>
+        <div className="flex items-center gap-3 w-full sm:w-auto">
+          <div className="relative flex-1 sm:flex-initial">
+            <Search className={`absolute left-3 top-1/2 -translate-y-1/2 ${
+              isDark ? 'text-gray-400' : 'text-gray-500'
+            }`} size={18} />
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Buscar cliente..."
+              className={`w-full sm:w-64 pl-10 pr-4 py-2 rounded-lg outline-none border transition-all ${
+                isDark
+                  ? 'bg-white/5 border-white/10 text-white placeholder-gray-400 focus:border-white/30'
+                  : 'bg-gray-50 border-gray-200 text-black placeholder-gray-500 focus:border-black'
+              }`}
+            />
+          </div>
+          <button
+            onClick={() => setShowAddModal(true)}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${
+              isDark
+                ? 'bg-white text-black hover:bg-gray-200'
+                : 'bg-black text-white hover:bg-gray-800'
+            }`}
+          >
+            <Plus size={18} />
+            <span className="hidden sm:inline">Agregar Cliente</span>
+            <span className="sm:hidden">Agregar</span>
+          </button>
+        </div>
       </div>
 
       {/* Clientes List */}
@@ -111,16 +136,16 @@ const ClientesPanel = ({ clientes, onClientesChange }) => {
               </tr>
             </thead>
             <tbody>
-              {clientes.length === 0 ? (
+              {filteredClientes.length === 0 ? (
                 <tr>
                   <td colSpan={4} className="text-center py-8">
                     <p className={isDark ? 'text-gray-400' : 'text-gray-600'}>
-                      No hay clientes registrados
+                      {searchTerm ? 'No se encontraron clientes' : 'No hay clientes registrados'}
                     </p>
                   </td>
                 </tr>
               ) : (
-                clientes.map((cliente) => (
+                filteredClientes.map((cliente) => (
                   <tr
                     key={cliente.id}
                     className={`border-t ${
