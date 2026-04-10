@@ -1,11 +1,13 @@
 import React, { useRef } from 'react';
 import { useTheme } from '../../context/ThemeContext';
+import { useAuth } from '../../context/AuthContext';
 import { X, Printer } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 
 const TicketGenerator = ({ pedido, onClose }) => {
   const { isDark } = useTheme();
+  const { currentUser } = useAuth();
   const ticketRef = useRef(null);
 
   const handlePrint = async () => {
@@ -36,13 +38,19 @@ const TicketGenerator = ({ pedido, onClose }) => {
     }
   };
 
-  const formatDate = (dateString) => {
+  const formatDateTime = (dateString) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('es-MX', {
+    const dateStr = date.toLocaleDateString('es-MX', {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric'
     });
+    const timeStr = date.toLocaleTimeString('es-MX', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    });
+    return `${dateStr} ${timeStr}`;
   };
 
   return (
@@ -99,8 +107,8 @@ const TicketGenerator = ({ pedido, onClose }) => {
               <p className="font-bold text-sm">Cliente:</p>
               <p className="font-extrabold text-3xl uppercase my-2">{pedido.cliente}</p>
               <div className="text-sm space-y-0.5">
-                <p>Usuario: GMAIL LOGIN</p>
-                <p>Fecha: {formatDate(pedido.fecha)}</p>
+                <p>Usuario: {currentUser?.email || 'N/A'}</p>
+                <p>Fecha: {formatDateTime(pedido.fecha)}</p>
                 <p>No. {pedido.numero || 'N/A'}</p>
               </div>
             </div>
@@ -140,7 +148,7 @@ const TicketGenerator = ({ pedido, onClose }) => {
                       })
                     ) : (
                       <div className="grid grid-cols-4 gap-2 mb-0.5">
-                        <div className="col-span-1 pl-2">• N/A</div>
+                        <div className="col-span-1 pl-2">NaN</div>
                         <div className="text-center">1</div>
                         <div className="text-center">${producto.precioUnitario.toFixed(2)}</div>
                         <div className="text-center font-bold">${producto.precioUnitario.toFixed(2)}</div>
@@ -160,12 +168,15 @@ const TicketGenerator = ({ pedido, onClose }) => {
                 <span>Total de artículos:</span>
                 <span className="font-bold">
                   {pedido.productos.reduce((sum, p) => {
-                    return sum + p.colores.reduce((s, c) => s + c.cantidad, 0);
+                    if (p.colores && p.colores.length > 0) {
+                      return sum + p.colores.reduce((s, c) => s + c.cantidad, 0);
+                    }
+                    return sum + 1;
                   }, 0)}
                 </span>
               </div>
               <div className="flex justify-between text-base">
-                <span>Precio total con IVA:</span>
+                <span>Precio total:</span>
                 <span className="font-bold">${pedido.total.toFixed(2)}</span>
               </div>
             </div>

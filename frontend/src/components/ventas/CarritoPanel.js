@@ -36,18 +36,18 @@ const CarritoPanel = ({ onPedidoCreated }) => {
       return;
     }
 
-    const pago = parseFloat(montoPagado) || 0;
-    const esAdeudo = pago < total;
-
-    if (esAdeudo && clientName === 'LOCAL' && !nombreCliente.trim()) {
-      showToast('Para pago parcial, debes especificar el nombre del cliente', 'warning');
+    // Validar que se haya ingresado un nombre de cliente
+    if (!nombreCliente.trim() || nombreCliente.trim().toUpperCase() === 'LOCAL') {
+      showToast('Debes ingresar el nombre del cliente', 'warning');
       return;
     }
+
+    const pago = parseFloat(montoPagado) || 0;
 
     try {
       setCreatingPedido(true);
 
-      const clienteFinal = esAdeudo ? nombreCliente.trim() : clientName;
+      const clienteFinal = nombreCliente.trim();
       
       // Generar número de pedido único
       const numeroPedido = `${Date.now().toString().slice(-8)}`.toUpperCase();
@@ -58,17 +58,19 @@ const CarritoPanel = ({ onPedidoCreated }) => {
         productos: cart.map(item => ({
           id: item.id,
           nombre: item.nombre,
+          colores: item.colores && item.colores.length > 0 
+            ? item.colores 
+            : [],
           cantidad: item.quantity,
           precioUnitario: item.unitPrice,
           priceType: item.priceType,
-          colores: item.colores || [],
           imagen: item.imagenes?.[0] || null
         })),
         total,
         pagado: pago,
-        adeudo: esAdeudo ? adeudo : 0,
+        adeudo: Math.max(0, total - pago),
         fecha: new Date().toISOString(),
-        estado: esAdeudo ? 'pendiente' : 'completado'
+        estado: pago >= total ? 'completado' : 'pendiente'
       };
 
       const docRef = await addDoc(collection(db, 'pedidos'), pedidoData);
@@ -326,27 +328,26 @@ const CarritoPanel = ({ onPedidoCreated }) => {
                 </div>
               )}
 
-              {/* Nombre Cliente (para adeudos) */}
-              {adeudo > 0 && clientName === 'LOCAL' && (
-                <div>
-                  <label className={`block text-sm font-medium mb-2 ${
-                    isDark ? 'text-gray-300' : 'text-gray-700'
-                  }`}>
-                    Nombre del Cliente (Obligatorio para adeudos)
-                  </label>
-                  <input
-                    type="text"
-                    value={nombreCliente}
-                    onChange={(e) => setNombreCliente(e.target.value)}
-                     placeholder="Nombre completo"
-                    className={`w-full px-4 py-3 rounded-lg border outline-none transition-all ${
-                      isDark
-                        ? 'bg-white/5 border-white/10 text-white focus:border-white/30'
-                        : 'bg-gray-50 border-gray-200 text-black focus:border-black'
-                    }`}
-                  />
-                </div>
-              )}
+              {/* Nombre Cliente (OBLIGATORIO SIEMPRE) */}
+              <div>
+                <label className={`block text-sm font-medium mb-2 ${
+                  isDark ? 'text-gray-300' : 'text-gray-700'
+                }`}>
+                  Nombre del Cliente *
+                </label>
+                <input
+                  type="text"
+                  value={nombreCliente}
+                  onChange={(e) => setNombreCliente(e.target.value)}
+                  placeholder="Nombre completo del cliente"
+                  className={`w-full px-4 py-3 rounded-lg border outline-none transition-all ${
+                    isDark
+                      ? 'bg-white/5 border-white/10 text-white focus:border-white/30'
+                      : 'bg-gray-50 border-gray-200 text-black focus:border-black'
+                  }`}
+                  required
+                />
+              </div>
             </div>
             <div className={`p-6 border-t flex gap-3 ${
               isDark ? 'border-white/10' : 'border-gray-200'
