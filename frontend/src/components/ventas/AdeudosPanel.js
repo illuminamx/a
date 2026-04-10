@@ -2,17 +2,19 @@ import React, { useState } from 'react';
 import { updateDoc, doc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useTheme } from '../../context/ThemeContext';
+import { useToast } from '../Toast';
 import { DollarSign, Plus, Check, X } from 'lucide-react';
 
 const AdeudosPanel = ({ pedidos, onPedidosChange }) => {
   const { isDark } = useTheme();
+  const { showToast } = useToast();
   const [selectedPedido, setSelectedPedido] = useState(null);
   const [montoAbono, setMontoAbono] = useState('');
   const [processing, setProcessing] = useState(false);
 
   const handleAbonar = async () => {
     if (!selectedPedido || !montoAbono) {
-      alert('Ingresa un monto válido');
+      showToast('Ingresa un monto válido', 'warning');
       return;
     }
 
@@ -36,10 +38,10 @@ const AdeudosPanel = ({ pedidos, onPedidosChange }) => {
       setMontoAbono('');
       setSelectedPedido(null);
       onPedidosChange();
-      alert('Abono registrado correctamente');
+      showToast('Abono registrado correctamente', 'success');
     } catch (error) {
       console.error('Error registrando abono:', error);
-      alert('Error al registrar el abono');
+      showToast('Error al registrar el abono', 'error');
     } finally {
       setProcessing(false);
     }
@@ -60,7 +62,7 @@ const AdeudosPanel = ({ pedidos, onPedidosChange }) => {
       alert('Pedido marcado como pagado');
     } catch (error) {
       console.error('Error actualizando pedido:', error);
-      alert('Error al actualizar el pedido');
+      showToast('Error al actualizar el pedido', 'error');
     }
   };
 

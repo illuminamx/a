@@ -3,11 +3,13 @@ import { addDoc, collection, updateDoc, doc, increment } from 'firebase/firestor
 import { db } from '../../firebase';
 import { useTheme } from '../../context/ThemeContext';
 import { useCart } from '../../context/CartContext';
+import { useToast } from '../Toast';
 import { ShoppingCart, Trash2, Plus, Minus, X, Check } from 'lucide-react';
 import TicketGenerator from './TicketGenerator';
 
 const CarritoPanel = ({ onPedidoCreated }) => {
   const { isDark } = useTheme();
+  const { showToast } = useToast();
   const { 
     cart, 
     clientName, 
@@ -30,7 +32,7 @@ const CarritoPanel = ({ onPedidoCreated }) => {
 
   const handleFinalizarPedido = async () => {
     if (cart.length === 0) {
-      alert('El carrito está vacío');
+      showToast('El carrito está vacío', 'warning');
       return;
     }
 
@@ -38,7 +40,7 @@ const CarritoPanel = ({ onPedidoCreated }) => {
     const esAdeudo = pago < total;
 
     if (esAdeudo && clientName === 'LOCAL' && !nombreCliente.trim()) {
-      alert('Para pago parcial, debes especificar el nombre del cliente');
+      showToast('Para pago parcial, debes especificar el nombre del cliente', 'warning');
       return;
     }
 
@@ -47,7 +49,11 @@ const CarritoPanel = ({ onPedidoCreated }) => {
 
       const clienteFinal = esAdeudo ? nombreCliente.trim() : clientName;
       
+      // Generar número de pedido único
+      const numeroPedido = `${Date.now().toString().slice(-8)}`.toUpperCase();
+      
       const pedidoData = {
+        numero: numeroPedido,
         cliente: clienteFinal,
         productos: cart.map(item => ({
           id: item.id,
@@ -67,16 +73,10 @@ const CarritoPanel = ({ onPedidoCreated }) => {
 
       const docRef = await addDoc(collection(db, 'pedidos'), pedidoData);
 
-      // Si no es LOCAL, actualizar estadísticas del cliente
-      if (clienteFinal !== 'LOCAL') {
-        // Aquí podrías buscar y actualizar el documento del cliente
-        // Por ahora solo guardamos el pedido
-      }
-
       // Generar ticket
       const ticketData = {
         ...pedidoData,
-        numero: docRef.id.slice(-8).toUpperCase()
+        id: docRef.id
       };
       setGeneratedTicket(ticketData);
 
@@ -85,10 +85,12 @@ const CarritoPanel = ({ onPedidoCreated }) => {
       setMontoPagado('');
       setNombreCliente('');
       onPedidoCreated();
+      
+      showToast('Pedido creado correctamente', 'success');
 
     } catch (error) {
       console.error('Error creando pedido:', error);
-      alert('Error al crear el pedido');
+      showToast('Error al crear el pedido', 'error');
     } finally {
       setCreatingPedido(false);
     }

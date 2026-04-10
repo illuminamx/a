@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTheme } from '../context/ThemeContext';
-import { X, Upload, Trash2, Plus, ZoomIn, ZoomOut, Move } from 'lucide-react';
+import { useToast } from '../components/Toast';
+import { X, Upload, Trash2, Plus, ZoomIn, ZoomOut } from 'lucide-react';
 import axios from 'axios';
 
 const IMGBB_API_KEY = '565bfd923ef367e0a4de22ec987bc64e';
 
 const ProductFormModal = ({ product, onSave, onClose }) => {
   const { isDark } = useTheme();
+  const { showToast } = useToast();
   const [formData, setFormData] = useState({
     nombre: '',
     descripcion: '',
@@ -77,13 +79,41 @@ const ProductFormModal = ({ product, onSave, onClose }) => {
     }
   };
 
+  // Convertir imagen a WebP
+  const convertToWebP = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          canvas.width = img.width;
+          canvas.height = img.height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0);
+          
+          canvas.toBlob((blob) => {
+            resolve(new File([blob], file.name.replace(/\.[^/.]+$/, '.webp'), { type: 'image/webp' }));
+          }, 'image/webp', 0.9);
+        };
+        img.onerror = reject;
+        img.src = e.target.result;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
+
   const handleImageUpload = async (e) => {
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
 
     setUploading(true);
     try {
-      const uploadPromises = files.map(file => uploadToImgBB(file));
+      // Convertir a WebP primero
+      const webpFiles = await Promise.all(files.map(file => convertToWebP(file)));
+      
+      const uploadPromises = webpFiles.map(file => uploadToImgBB(file));
       const urls = await Promise.all(uploadPromises);
       
       setFormData(prev => ({
@@ -97,8 +127,10 @@ const ProductFormModal = ({ product, onSave, onClose }) => {
         setImageZoom(prev => ({ ...prev, [imgIndex]: 1 }));
         setImagePosition(prev => ({ ...prev, [imgIndex]: { x: 0, y: 0 } }));
       });
+      
+      showToast('Imágenes subidas correctamente (convertidas a WebP)', 'success');
     } catch (error) {
-      alert('Error al subir imágenes. Intenta de nuevo.');
+      showToast('Error al subir imágenes. Intenta de nuevo.', 'error');
     } finally {
       setUploading(false);
     }
@@ -122,7 +154,7 @@ const ProductFormModal = ({ product, onSave, onClose }) => {
     e.preventDefault();
     
     if (!formData.nombre.trim()) {
-      alert('El nombre del producto es obligatorio');
+      showToast('El nombre del producto es obligatorio', 'warning');
       return;
     }
 

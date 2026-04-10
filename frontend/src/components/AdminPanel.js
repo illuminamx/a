@@ -3,6 +3,7 @@ import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc } from 'firebase
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import { useToast } from '../components/Toast';
 import { useNavigate } from 'react-router-dom';
 import { 
   LogOut, Plus, Edit2, Trash2, Save, X, Moon, Sun, 
@@ -17,6 +18,7 @@ const AdminPanel = () => {
   const [editingProduct, setEditingProduct] = useState(null);
   const { logout } = useAuth();
   const { isDark, toggleTheme } = useTheme();
+  const { showToast } = useToast();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -34,7 +36,7 @@ const AdminPanel = () => {
       setProducts(productsData);
     } catch (error) {
       console.error('Error cargando productos:', error);
-      alert('Error al cargar productos');
+      showToast('Error al cargar productos', 'error');
     } finally {
       setLoading(false);
     }
@@ -67,10 +69,10 @@ const AdminPanel = () => {
     try {
       await deleteDoc(doc(db, 'productos', productId));
       setProducts(products.filter(p => p.id !== productId));
-      alert('Producto eliminado correctamente');
+      showToast('Producto eliminado correctamente', 'success');
     } catch (error) {
       console.error('Error eliminando producto:', error);
-      alert('Error al eliminar producto');
+      showToast('Error al eliminar producto', 'error');
     }
   };
 
@@ -82,18 +84,18 @@ const AdminPanel = () => {
         setProducts(products.map(p => 
           p.id === editingProduct.id ? { ...p, ...productData } : p
         ));
-        alert('Producto actualizado correctamente');
+        showToast('Producto actualizado correctamente', 'success');
       } else {
         // Crear nuevo producto
         const docRef = await addDoc(collection(db, 'productos'), productData);
         setProducts([...products, { id: docRef.id, ...productData }]);
-        alert('Producto creado correctamente');
+        showToast('Producto creado correctamente', 'success');
       }
       setShowModal(false);
       setEditingProduct(null);
     } catch (error) {
       console.error('Error guardando producto:', error);
-      alert('Error al guardar producto');
+      showToast('Error al guardar producto', 'error');
     }
   };
 

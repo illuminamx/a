@@ -2,11 +2,15 @@ import React, { useState } from 'react';
 import { deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useTheme } from '../../context/ThemeContext';
-import { Trash2, Eye, X, Package } from 'lucide-react';
+import { useToast } from '../Toast';
+import { Trash2, Eye, X, Package, FileText } from 'lucide-react';
+import TicketGenerator from './TicketGenerator';
 
 const PedidosPanel = ({ pedidos, onPedidosChange }) => {
   const { isDark } = useTheme();
+  const { showToast } = useToast();
   const [selectedPedido, setSelectedPedido] = useState(null);
+  const [showTicket, setShowTicket] = useState(null);
 
   const handleDeletePedido = async (pedidoId) => {
     if (!window.confirm('¿Estás seguro de eliminar este pedido?')) {
@@ -16,10 +20,10 @@ const PedidosPanel = ({ pedidos, onPedidosChange }) => {
     try {
       await deleteDoc(doc(db, 'pedidos', pedidoId));
       onPedidosChange();
-      alert('Pedido eliminado correctamente');
+      showToast('Pedido eliminado correctamente', 'success');
     } catch (error) {
       console.error('Error eliminando pedido:', error);
-      alert('Error al eliminar pedido');
+      showToast('Error al eliminar pedido', 'error');
     }
   };
 
@@ -66,6 +70,13 @@ const PedidosPanel = ({ pedidos, onPedidosChange }) => {
                   }`}>
                     {formatDate(pedido.fecha)}
                   </p>
+                  {pedido.numero && (
+                    <p className={`text-xs font-mono ${
+                      isDark ? 'text-gray-500' : 'text-gray-500'
+                    }`}>
+                      No. {pedido.numero}
+                    </p>
+                  )}
                 </div>
                 <div className="text-right">
                   <p className="font-bold text-xl">${pedido.total.toFixed(2)}</p>
@@ -94,28 +105,39 @@ const PedidosPanel = ({ pedidos, onPedidosChange }) => {
               </div>
 
               {/* Actions */}
-              <div className="flex gap-2">
+              <div className="grid grid-cols-3 gap-2">
                 <button
                   onClick={() => setSelectedPedido(pedido)}
-                  className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg transition-colors ${
+                  className={`flex items-center justify-center gap-2 px-3 py-2 rounded-lg transition-colors ${
                     isDark
                       ? 'bg-white/10 hover:bg-white/20'
                       : 'bg-black/5 hover:bg-black/10'
                   }`}
                 >
                   <Eye size={16} />
-                  Ver Detalle
+                  <span className="text-sm">Detalle</span>
+                </button>
+                <button
+                  onClick={() => setShowTicket(pedido)}
+                  className={`flex items-center justify-center gap-2 px-3 py-2 rounded-lg transition-colors ${
+                    isDark
+                      ? 'bg-blue-500/20 hover:bg-blue-500/30 text-blue-400'
+                      : 'bg-blue-50 hover:bg-blue-100 text-blue-600'
+                  }`}
+                >
+                  <FileText size={16} />
+                  <span className="text-sm">Ticket</span>
                 </button>
                 <button
                   onClick={() => handleDeletePedido(pedido.id)}
-                  className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg transition-colors ${
+                  className={`flex items-center justify-center gap-2 px-3 py-2 rounded-lg transition-colors ${
                     isDark
                       ? 'bg-red-500/20 hover:bg-red-500/30 text-red-400'
                       : 'bg-red-50 hover:bg-red-100 text-red-600'
                   }`}
                 >
                   <Trash2 size={16} />
-                  Eliminar
+                  <span className="text-sm">Eliminar</span>
                 </button>
               </div>
             </div>
@@ -238,6 +260,14 @@ const PedidosPanel = ({ pedidos, onPedidosChange }) => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Ticket Modal */}
+      {showTicket && (
+        <TicketGenerator
+          pedido={showTicket}
+          onClose={() => setShowTicket(null)}
+        />
       )}
     </div>
   );

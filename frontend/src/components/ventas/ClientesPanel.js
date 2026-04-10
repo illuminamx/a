@@ -2,10 +2,12 @@ import React, { useState } from 'react';
 import { addDoc, updateDoc, deleteDoc, doc, collection } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useTheme } from '../../context/ThemeContext';
+import { useToast } from '../Toast';
 import { Plus, Edit2, Trash2, MoreVertical, X, DollarSign } from 'lucide-react';
 
 const ClientesPanel = ({ clientes, onClientesChange }) => {
   const { isDark } = useTheme();
+  const { showToast } = useToast();
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingCliente, setEditingCliente] = useState(null);
   const [showMenuId, setShowMenuId] = useState(null);
@@ -13,7 +15,7 @@ const ClientesPanel = ({ clientes, onClientesChange }) => {
 
   const handleAddCliente = async () => {
     if (!clienteName.trim()) {
-      alert('El nombre del cliente es obligatorio');
+      showToast('El nombre del cliente es obligatorio', 'warning');
       return;
     }
 
@@ -28,16 +30,16 @@ const ClientesPanel = ({ clientes, onClientesChange }) => {
       setClienteName('');
       setShowAddModal(false);
       onClientesChange();
-      alert('Cliente agregado correctamente');
+      showToast('Cliente agregado correctamente', 'success');
     } catch (error) {
       console.error('Error agregando cliente:', error);
-      alert('Error al agregar cliente');
+      showToast('Error al agregar cliente', 'error');
     }
   };
 
   const handleEditCliente = async () => {
     if (!clienteName.trim()) {
-      alert('El nombre del cliente es obligatorio');
+      showToast('El nombre del cliente es obligatorio', 'warning');
       return;
     }
 
@@ -48,10 +50,10 @@ const ClientesPanel = ({ clientes, onClientesChange }) => {
       setClienteName('');
       setEditingCliente(null);
       onClientesChange();
-      alert('Cliente actualizado correctamente');
+      showToast('Cliente actualizado correctamente', 'success');
     } catch (error) {
       console.error('Error actualizando cliente:', error);
-      alert('Error al actualizar cliente');
+      showToast('Error al actualizar cliente', 'error');
     }
   };
 
@@ -64,10 +66,10 @@ const ClientesPanel = ({ clientes, onClientesChange }) => {
       await deleteDoc(doc(db, 'clientes', clienteId));
       onClientesChange();
       setShowMenuId(null);
-      alert('Cliente eliminado correctamente');
+      showToast('Cliente eliminado correctamente', 'success');
     } catch (error) {
       console.error('Error eliminando cliente:', error);
-      alert('Error al eliminar cliente');
+      showToast('Error al eliminar cliente', 'error');
     }
   };
 
