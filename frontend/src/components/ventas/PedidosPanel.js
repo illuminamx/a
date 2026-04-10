@@ -3,7 +3,7 @@ import { deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useTheme } from '../../context/ThemeContext';
 import { useToast } from '../Toast';
-import { Trash2, Eye, X, Package, FileText } from 'lucide-react';
+import { Trash2, Eye, X, Package, FileText, Search } from 'lucide-react';
 import TicketGenerator from './TicketGenerator';
 
 const PedidosPanel = ({ pedidos, onPedidosChange }) => {
@@ -11,6 +11,13 @@ const PedidosPanel = ({ pedidos, onPedidosChange }) => {
   const { showToast } = useToast();
   const [selectedPedido, setSelectedPedido] = useState(null);
   const [showTicket, setShowTicket] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  // Filtrar pedidos
+  const filteredPedidos = pedidos.filter(pedido =>
+    pedido.cliente?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    pedido.numero?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   const handleDeletePedido = async (pedidoId) => {
     if (!window.confirm('¿Estás seguro de eliminar este pedido?')) {
@@ -40,22 +47,38 @@ const PedidosPanel = ({ pedidos, onPedidosChange }) => {
 
   return (
     <div>
-      <div className="mb-6">
-        <h2 className="text-xl font-semibold">Pedidos ({pedidos.length})</h2>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+        <h2 className="text-xl font-semibold">Pedidos ({filteredPedidos.length})</h2>
+        <div className="relative w-full sm:w-auto">
+          <Search className={`absolute left-3 top-1/2 -translate-y-1/2 ${
+            isDark ? 'text-gray-400' : 'text-gray-500'
+          }`} size={18} />
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Buscar por cliente o No..."
+            className={`w-full sm:w-64 pl-10 pr-4 py-2 rounded-lg outline-none border transition-all ${
+              isDark
+                ? 'bg-white/5 border-white/10 text-white placeholder-gray-400 focus:border-white/30'
+                : 'bg-gray-50 border-gray-200 text-black placeholder-gray-500 focus:border-black'
+            }`}
+          />
+        </div>
       </div>
 
-      {pedidos.length === 0 ? (
+      {filteredPedidos.length === 0 ? (
         <div className="text-center py-20">
           <Package size={48} className={`mx-auto mb-4 ${
             isDark ? 'text-gray-600' : 'text-gray-400'
           }`} />
           <p className={isDark ? 'text-gray-400' : 'text-gray-600'}>
-            No hay pedidos registrados
+            {searchTerm ? 'No se encontraron pedidos' : 'No hay pedidos registrados'}
           </p>
         </div>
       ) : (
         <div className="space-y-4">
-          {pedidos.map((pedido) => (
+          {filteredPedidos.map((pedido) => (
             <div
               key={pedido.id}
               className={`rounded-xl border p-4 transition-all duration-300 hover:shadow-lg ${

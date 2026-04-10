@@ -3,7 +3,7 @@ import { updateDoc, doc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useTheme } from '../../context/ThemeContext';
 import { useToast } from '../Toast';
-import { DollarSign, Plus, Check, X } from 'lucide-react';
+import { DollarSign, Plus, Check, X, Search } from 'lucide-react';
 
 const AdeudosPanel = ({ pedidos, onPedidosChange }) => {
   const { isDark } = useTheme();
@@ -11,6 +11,13 @@ const AdeudosPanel = ({ pedidos, onPedidosChange }) => {
   const [selectedPedido, setSelectedPedido] = useState(null);
   const [montoAbono, setMontoAbono] = useState('');
   const [processing, setProcessing] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  // Filtrar adeudos
+  const filteredAdeudos = pedidos.filter(pedido =>
+    pedido.cliente?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    pedido.numero?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   const handleAbonar = async () => {
     if (!selectedPedido || !montoAbono) {
@@ -77,29 +84,47 @@ const AdeudosPanel = ({ pedidos, onPedidosChange }) => {
 
   return (
     <div>
-      <div className="mb-6">
-        <h2 className="text-xl font-semibold">Adeudos ({pedidos.length})</h2>
-        {pedidos.length > 0 && (
-          <p className={`text-sm mt-1 ${
-            isDark ? 'text-gray-400' : 'text-gray-600'
-          }`}>
-            Total adeudado: ${pedidos.reduce((sum, p) => sum + p.adeudo, 0).toFixed(2)}
-          </p>
-        )}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+        <div>
+          <h2 className="text-xl font-semibold">Adeudos ({filteredAdeudos.length})</h2>
+          {filteredAdeudos.length > 0 && (
+            <p className={`text-sm mt-1 ${
+              isDark ? 'text-gray-400' : 'text-gray-600'
+            }`}>
+              Total adeudado: ${filteredAdeudos.reduce((sum, p) => sum + p.adeudo, 0).toFixed(2)}
+            </p>
+          )}
+        </div>
+        <div className="relative w-full sm:w-auto">
+          <Search className={`absolute left-3 top-1/2 -translate-y-1/2 ${
+            isDark ? 'text-gray-400' : 'text-gray-500'
+          }`} size={18} />
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Buscar adeudo..."
+            className={`w-full sm:w-64 pl-10 pr-4 py-2 rounded-lg outline-none border transition-all ${
+              isDark
+                ? 'bg-white/5 border-white/10 text-white placeholder-gray-400 focus:border-white/30'
+                : 'bg-gray-50 border-gray-200 text-black placeholder-gray-500 focus:border-black'
+            }`}
+          />
+        </div>
       </div>
 
-      {pedidos.length === 0 ? (
+      {filteredAdeudos.length === 0 ? (
         <div className="text-center py-20">
           <DollarSign size={48} className={`mx-auto mb-4 ${
             isDark ? 'text-gray-600' : 'text-gray-400'
           }`} />
           <p className={isDark ? 'text-gray-400' : 'text-gray-600'}>
-            No hay adeudos pendientes
+            {searchTerm ? 'No se encontraron adeudos' : 'No hay adeudos pendientes'}
           </p>
         </div>
       ) : (
         <div className="space-y-4">
-          {pedidos.map((pedido) => (
+          {filteredAdeudos.map((pedido) => (
             <div
               key={pedido.id}
               className={`rounded-xl border p-4 transition-all duration-300 ${

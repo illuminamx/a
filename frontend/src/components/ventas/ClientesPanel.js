@@ -3,16 +3,17 @@ import { addDoc, updateDoc, deleteDoc, doc, collection } from 'firebase/firestor
 import { db } from '../../firebase';
 import { useTheme } from '../../context/ThemeContext';
 import { useToast } from '../Toast';
-import { Plus, Edit2, Trash2, MoreVertical, X, DollarSign, Search } from 'lucide-react';
+import { Plus, Edit2, Trash2, X, DollarSign, Search, Tag, ShoppingCart } from 'lucide-react';
 
 const ClientesPanel = ({ clientes, onClientesChange }) => {
   const { isDark } = useTheme();
   const { showToast } = useToast();
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingCliente, setEditingCliente] = useState(null);
-  const [showMenuId, setShowMenuId] = useState(null);
   const [clienteName, setClienteName] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [showPreciosModal, setShowPreciosModal] = useState(null);
+  const [showPedidoModal, setShowPedidoModal] = useState(null);
 
   // Filtrar clientes
   const filteredClientes = clientes.filter(cliente =>
@@ -71,7 +72,6 @@ const ClientesPanel = ({ clientes, onClientesChange }) => {
     try {
       await deleteDoc(doc(db, 'clientes', clienteId));
       onClientesChange();
-      setShowMenuId(null);
       showToast('Cliente eliminado correctamente', 'success');
     } catch (error) {
       console.error('Error eliminando cliente:', error);
@@ -82,7 +82,6 @@ const ClientesPanel = ({ clientes, onClientesChange }) => {
   const openEditModal = (cliente) => {
     setEditingCliente(cliente);
     setClienteName(cliente.nombre);
-    setShowMenuId(null);
   };
 
   return (
@@ -160,40 +159,43 @@ const ClientesPanel = ({ clientes, onClientesChange }) => {
                       </span>
                     </td>
                     <td className="px-4 py-3">
-                      <div className="flex items-center justify-end gap-2 relative">
+                      <div className="flex items-center justify-end gap-1">
                         <button
-                          onClick={() => setShowMenuId(showMenuId === cliente.id ? null : cliente.id)}
+                          onClick={() => setShowPedidoModal(cliente)}
+                          className={`p-2 rounded-lg transition-colors ${
+                            isDark ? 'hover:bg-blue-500/10 text-blue-400' : 'hover:bg-blue-50 text-blue-600'
+                          }`}
+                          title="Crear pedido"
+                        >
+                          <ShoppingCart size={16} />
+                        </button>
+                        <button
+                          onClick={() => setShowPreciosModal(cliente)}
+                          className={`p-2 rounded-lg transition-colors ${
+                            isDark ? 'hover:bg-green-500/10 text-green-400' : 'hover:bg-green-50 text-green-600'
+                          }`}
+                          title="Precios especiales"
+                        >
+                          <Tag size={16} />
+                        </button>
+                        <button
+                          onClick={() => openEditModal(cliente)}
                           className={`p-2 rounded-lg transition-colors ${
                             isDark ? 'hover:bg-white/10' : 'hover:bg-black/5'
                           }`}
+                          title="Editar cliente"
                         >
-                          <MoreVertical size={18} />
+                          <Edit2 size={16} />
                         </button>
-
-                        {showMenuId === cliente.id && (
-                          <div className={`absolute right-0 top-full mt-2 w-48 rounded-lg shadow-lg border z-10 ${
-                            isDark ? 'bg-zinc-800 border-white/10' : 'bg-white border-gray-200'
-                          }`}>
-                            <button
-                              onClick={() => openEditModal(cliente)}
-                              className={`w-full flex items-center gap-2 px-4 py-2 transition-colors ${
-                                isDark ? 'hover:bg-white/10' : 'hover:bg-gray-100'
-                              }`}
-                            >
-                              <Edit2 size={16} />
-                              Editar
-                            </button>
-                            <button
-                              onClick={() => handleDeleteCliente(cliente.id)}
-                              className={`w-full flex items-center gap-2 px-4 py-2 transition-colors text-red-500 ${
-                                isDark ? 'hover:bg-red-500/10' : 'hover:bg-red-50'
-                              }`}
-                            >
-                              <Trash2 size={16} />
-                              Eliminar
-                            </button>
-                          </div>
-                        )}
+                        <button
+                          onClick={() => handleDeleteCliente(cliente.id)}
+                          className={`p-2 rounded-lg transition-colors text-red-500 ${
+                            isDark ? 'hover:bg-red-500/10' : 'hover:bg-red-50'
+                          }`}
+                          title="Eliminar cliente"
+                        >
+                          <Trash2 size={16} />
+                        </button>
                       </div>
                     </td>
                   </tr>
