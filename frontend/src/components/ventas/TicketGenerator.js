@@ -121,15 +121,21 @@ const TicketGenerator = ({ pedido, onClose }) => {
               </div>
               
               {pedido.productos.map((producto, index) => (
-                <div key={index} className="mb-2">
-                  <div className="grid grid-cols-4 gap-1 text-xs items-center">
+                <div key={index} className="mb-3">
+                  <div className="grid grid-cols-4 gap-1 text-xs items-start">
                     <div className="font-semibold">{producto.nombre}</div>
                     <div className="text-center">{producto.cantidad}</div>
                     <div className="text-right">${producto.precioUnitario.toFixed(2)}</div>
                     <div className="text-right font-bold">${(producto.cantidad * producto.precioUnitario).toFixed(2)}</div>
                   </div>
-                  {producto.color && (
-                    <div className="text-[10px] ml-1">- {producto.color}</div>
+                  {producto.colores && producto.colores.length > 0 && (
+                    <div className="mt-1 ml-1">
+                      {producto.colores.map((color, i) => (
+                        <div key={i} className="text-[10px] leading-tight">
+                          - {color}
+                        </div>
+                      ))}
+                    </div>
                   )}
                 </div>
               ))}
