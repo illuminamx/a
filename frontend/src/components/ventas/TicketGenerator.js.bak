@@ -1,0 +1,61 @@
+import React, { useRef, useEffect } from 'react';
+import { useTheme } from '../../context/ThemeContext';
+import { X, Download } from 'lucide-react';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
+
+const TicketGenerator = ({ pedido, onClose }) => {
+  const { isDark } = useTheme();
+  const ticketRef = useRef(null);
+
+  const handleDownloadPDF = async () => {
+    if (!ticketRef.current) return;
+
+    try {
+      const canvas = await html2canvas(ticketRef.current, {
+        scale: 2,
+        backgroundColor: '#ffffff',
+        logging: false
+      });
+
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: [80, canvas.height * 80 / canvas.width] // Ticket size
+      });
+
+      pdf.addImage(imgData, 'PNG', 0, 0, 80, canvas.height * 80 / canvas.width);
+      pdf.save(`ticket-${pedido.numero}.pdf`);
+    } catch (error) {
+      console.error('Error generando PDF:', error);
+      alert('Error al generar el PDF');
+    }
+  };
+
+  const handleDownloadImage = async () => {
+    if (!ticketRef.current) return;
+
+    try {
+      const canvas = await html2canvas(ticketRef.current, {
+        scale: 2,
+        backgroundColor: '#ffffff',
+        logging: false
+      });
+
+      const link = document.createElement('a');
+      link.download = `ticket-${pedido.numero}.png`;
+      link.href = canvas.toDataURL();
+      link.click();
+    } catch (error) {
+      console.error('Error generando imagen:', error);
+      alert('Error al generar la imagen');
+    }
+  };
+
+  return (
+    <div className=\"fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm\">
+      <div className={`w-full max-w-md rounded-2xl shadow-2xl overflow-hidden ${\n        isDark ? 'bg-zinc-900' : 'bg-white'\n      }`}>\n        {/* Header */}\n        <div className={`p-4 border-b flex items-center justify-between ${\n          isDark ? 'border-white/10' : 'border-gray-200'\n        }`}>\n          <h3 className=\"font-bold text-lg\">Ticket de Venta</h3>\n          <button\n            onClick={onClose}\n            className={`p-2 rounded-full transition-colors ${\n              isDark ? 'hover:bg-white/10' : 'hover:bg-black/5'\n            }`}\n          >\n            <X size={20} />\n          </button>\n        </div>\n\n        {/* Ticket Preview */}\n        <div className=\"p-4 max-h-[60vh] overflow-y-auto\">\n          <div\n            ref={ticketRef}\n            className=\"bg-white text-black p-6 font-mono text-sm\"\n            style={{ width: '300px', margin: '0 auto' }}\n          >\n            {/* Header */}\n            <div className=\"text-center mb-4 border-b-2 border-black pb-4\">\n              <div className=\"flex items-center justify-between mb-2\">\n                <div className=\"w-12 h-12 border-2 border-black rounded-full flex items-center justify-center\">\n                  <span className=\"text-2xl font-bold\">J</span>\n                </div>\n                <div className=\"flex-1 text-right\">\n                  <h1 className=\"text-xl font-bold\">JessicaAleSuarez</h1>\n                </div>\n              </div>\n              <p className=\"text-xs mt-2\">Plaza de la Tecnología</p>\n              <p className=\"text-xs\">Local 26 Entrada sobre Uruguay 11</p>\n              <p className=\"text-xs\">Con salida al pasillo 2</p>\n            </div>\n\n            <div className=\"border-b border-black pb-2 mb-3\">\n              <div className=\"text-xs space-y-1\">\n                <div className=\"flex justify-between\">\n                  <span>Cliente:</span>\n                  <span className=\"font-bold\">{pedido.cliente}</span>\n                </div>\n                <div className=\"flex justify-between\">\n                  <span>Fecha:</span>\n                  <span>{new Date(pedido.fecha).toLocaleString('es-MX')}</span>\n                </div>\n                <div className=\"flex justify-between\">\n                  <span>No.:</span>\n                  <span className=\"font-bold\">{pedido.numero}</span>\n                </div>\n              </div>\n            </div>\n\n            {/* Products Table */}\n            <div className=\"mb-3\">\n              <table className=\"w-full text-xs\">\n                <thead>\n                  <tr className=\"border-b border-black\">\n                    <th className=\"text-left py-1\">PRODUCTO</th>\n                    <th className=\"text-center py-1\">CANT</th>\n                    <th className=\"text-right py-1\">P/PIEZA</th>\n                    <th className=\"text-right py-1\">TOTAL</th>\n                  </tr>\n                </thead>\n                <tbody>\n                  {pedido.productos.map((producto, index) => (\n                    <tr key={index} className=\"border-b border-gray-300\">\n                      <td className=\"py-2\">\n                        <div>\n                          <div className=\"font-semibold\">{producto.nombre}</div>\n                          {producto.colores && producto.colores.length > 0 && (\n                            <div className=\"text-xs text-gray-600\">\n                              {producto.colores.join(', ')}\n                            </div>\n                          )}\n                        </div>\n                      </td>\n                      <td className=\"text-center py-2\">{producto.cantidad}</td>\n                      <td className=\"text-right py-2\">${producto.precioUnitario.toFixed(2)}</td>\n                      <td className=\"text-right py-2 font-semibold\">\n                        ${(producto.cantidad * producto.precioUnitario).toFixed(2)}\n                      </td>\n                    </tr>\n                  ))}\n                </tbody>\n              </table>\n            </div>\n\n            {/* Totals */}\n            <div className=\"border-t-2 border-black pt-2 mb-3\">\n              <div className=\"flex justify-between text-xs mb-1\">\n                <span>Total de artículos:</span>\n                <span className=\"font-bold\">\n                  {pedido.productos.reduce((sum, p) => sum + p.cantidad, 0)}\n                </span>\n              </div>\n              <div className=\"flex justify-between text-sm font-bold\">\n                <span>Precio total:</span>\n                <span>${pedido.total.toFixed(2)}</span>\n              </div>\n              {pedido.pagado > 0 && (\n                <div className=\"flex justify-between text-xs\">\n                  <span>Pagado:</span>\n                  <span>${pedido.pagado.toFixed(2)}</span>\n                </div>\n              )}\n              {pedido.adeudo > 0 && (\n                <div className=\"flex justify-between text-xs text-red-600 font-bold\">\n                  <span>Adeudo:</span>\n                  <span>${pedido.adeudo.toFixed(2)}</span>\n                </div>\n              )}\n            </div>\n\n            {/* Footer */}\n            <div className=\"border-t border-black pt-3 text-xs text-center space-y-1\">\n              <p className=\"font-bold\">7 DÍAS DE GARANTÍA CON TICKET ORIGINAL</p>\n              <p>(REPARACIÓN) ES PIEZAS NO ROTO NO</p>\n              <p>DEFECTOS DE FÁBRICA NO ROTO NO</p>\n              <p>MALTRATADO NO HAY CAMBIOS NI</p>\n              <p>DEVOLUCIONES MENORES A $50 MXN NO HAY</p>\n              <p>GARANTÍA</p>\n              <p className=\"font-bold mt-2\">DE LUNES A SÁBADO DE 11AM A 6PM</p>\n            </div>\n          </div>\n        </div>\n\n        {/* Actions */}\n        <div className={`p-4 border-t flex gap-3 ${\n          isDark ? 'border-white/10' : 'border-gray-200'\n        }`}>\n          <button\n            onClick={handleDownloadImage}\n            className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium transition-colors ${\n              isDark\n                ? 'bg-white/10 hover:bg-white/20'\n                : 'bg-gray-100 hover:bg-gray-200'\n            }`}\n          >\n            <Download size={18} />\n            Descargar Imagen\n          </button>\n          <button\n            onClick={handleDownloadPDF}\n            className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium transition-colors ${\n              isDark\n                ? 'bg-white text-black hover:bg-gray-200'\n                : 'bg-black text-white hover:bg-gray-800'\n            }`}\n          >\n            <Download size={18} />\n            Descargar PDF\n          </button>\n        </div>\n      </div>\n    </div>\n  );
+};
+
+export default TicketGenerator;
