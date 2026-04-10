@@ -1,0 +1,13 @@
+{
+  "private": true,
+  "name": "jessica-alesuarez",
+  "version": "1.0.0",
+  "workspaces": [
+    "frontend"
+  ],
+  "scripts": {
+    "build": "cd frontend && yarn build",
+    "start": "cd frontend && yarn start"
+  }
+}
+

@@ -10,9 +10,16 @@
 - Click **"New Project"**
 - Importa tu repositorio de GitHub
 
-### 3️⃣ NO TOQUES NADA
-- Vercel detectará automáticamente todo
+### 3️⃣ NO TOQUES NADA (Vercel configurará automáticamente)
+- Vercel detectará el proyecto
+- **IMPORTANTE**: Si pregunta por Root Directory, déjalo en `.` (raíz)
 - Solo da click en **"Deploy"**
+
+**Si te aparecen opciones de configuración:**
+- Root Directory: `.` (raíz del proyecto)
+- Build Command: déjalo vacío (usa vercel.json)
+- Output Directory: déjalo vacío (usa vercel.json)
+- Install Command: déjalo vacío (usa vercel.json)
 
 ### 4️⃣ Agrega Variables de Entorno
 Después del primer deploy (aunque falle), ve a:
