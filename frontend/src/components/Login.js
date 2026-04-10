@@ -125,13 +125,6 @@ const Login = () => {
             {loading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
           </button>
         </form>
-
-        <div className={`mt-6 text-center text-sm ${
-          isDark ? 'text-gray-400' : 'text-gray-600'
-        }`}>
-          <p>Credenciales de prueba:</p>
-          <p className="mt-1">edgar561737@gmail.com / Edgar123e</p>
-        </div>
       </div>
     </div>
   );
