@@ -12,6 +12,7 @@ const PedidosPanel = ({ pedidos, onPedidosChange }) => {
   const [selectedPedido, setSelectedPedido] = useState(null);
   const [showTicket, setShowTicket] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
 
   // Filtrar pedidos
   const filteredPedidos = pedidos.filter(pedido =>
@@ -20,14 +21,11 @@ const PedidosPanel = ({ pedidos, onPedidosChange }) => {
   );
 
   const handleDeletePedido = async (pedidoId) => {
-    if (!window.confirm('¿Estás seguro de eliminar este pedido?')) {
-      return;
-    }
-
     try {
       await deleteDoc(doc(db, 'pedidos', pedidoId));
       onPedidosChange();
       showToast('Pedido eliminado correctamente', 'success');
+      setShowDeleteConfirm(null);
     } catch (error) {
       console.error('Error eliminando pedido:', error);
       showToast('Error al eliminar pedido', 'error');
@@ -152,7 +150,7 @@ const PedidosPanel = ({ pedidos, onPedidosChange }) => {
                   <span className="text-sm">Ticket</span>
                 </button>
                 <button
-                  onClick={() => handleDeletePedido(pedido.id)}
+                  onClick={() => setShowDeleteConfirm(pedido)}
                   className={`flex items-center justify-center gap-2 px-3 py-2 rounded-lg transition-colors ${
                     isDark
                       ? 'bg-red-500/20 hover:bg-red-500/30 text-red-400'
@@ -279,6 +277,40 @@ const PedidosPanel = ({ pedidos, onPedidosChange }) => {
                 }`}
               >
                 Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className={`w-full max-w-md rounded-2xl shadow-2xl p-6 ${
+            isDark ? 'bg-zinc-900' : 'bg-white'
+          }`}>
+            <h3 className="text-xl font-bold mb-4">¿Eliminar Pedido?</h3>
+            <p className={`mb-6 ${
+              isDark ? 'text-gray-400' : 'text-gray-600'
+            }`}>
+              ¿Estás seguro de eliminar el pedido de {showDeleteConfirm.cliente}? Esta acción no se puede deshacer.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowDeleteConfirm(null)}
+                className={`flex-1 px-4 py-3 rounded-lg font-medium transition-colors ${
+                  isDark
+                    ? 'bg-white/10 hover:bg-white/20'
+                    : 'bg-gray-100 hover:bg-gray-200'
+                }`}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => handleDeletePedido(showDeleteConfirm.id)}
+                className="flex-1 px-4 py-3 rounded-lg font-medium transition-colors bg-red-500 hover:bg-red-600 text-white"
+              >
+                Eliminar
               </button>
             </div>
           </div>

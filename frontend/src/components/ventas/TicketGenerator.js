@@ -3,7 +3,6 @@ import { useTheme } from '../../context/ThemeContext';
 import { X, Printer } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
-import { getColorHex } from '../../utils/colorUtils';
 
 const TicketGenerator = ({ pedido, onClose }) => {
   const { isDark } = useTheme();
@@ -37,23 +36,6 @@ const TicketGenerator = ({ pedido, onClose }) => {
     }
   };
 
-  const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('es-MX', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric'
-    });
-  };
-
-  const formatTime = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleTimeString('es-MX', {
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
       <div className={`w-full max-w-md rounded-2xl shadow-2xl overflow-hidden ${
@@ -76,103 +58,111 @@ const TicketGenerator = ({ pedido, onClose }) => {
         <div className="p-4 max-h-[60vh] overflow-y-auto">
           <div
             ref={ticketRef}
-            className="bg-white text-black p-6 font-mono text-xs"
+            className="bg-white text-black p-8 font-mono"
             style={{ width: '300px', margin: '0 auto' }}
           >
-            {/* Header minimalista */}
+            {/* Header */}
             <div className="text-center mb-4">
-              <h1 className="text-xl font-bold mb-1">JessicaAleSuarez</h1>
-              <div className="text-[10px] leading-relaxed">
+              <h1 className="text-2xl font-bold mb-2">JessicaAleSuarez</h1>
+              <div className="text-xs">
                 <p>Plaza de la Tecnología</p>
                 <p>Local 26 Entrada sobre Uruguay 11</p>
                 <p>Con salida al pasillo 2</p>
               </div>
             </div>
 
-            <div className="border-t border-b border-black py-2 mb-3">
-              <div className="text-center">
-                <p className="text-sm font-bold">{pedido.cliente}</p>
-              </div>
-            </div>
+            <div className="border-t-2 border-black my-3"></div>
 
-            {/* Info */}
-            <div className="mb-3 space-y-0.5">
-              <div className="flex justify-between">
-                <span>Fecha</span>
-                <span>{formatDate(pedido.fecha)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Hora</span>
-                <span>{formatTime(pedido.fecha)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>No</span>
-                <span className="font-bold">{pedido.numero}</span>
-              </div>
-            </div>
-
-            <div className="border-t border-black my-2"></div>
-
-            {/* Productos con nuevo formato */}
+            {/* Cliente */}
             <div className="mb-3">
-              {pedido.productos.map((producto, index) => (
-                <div key={index} className="mb-3">
-                  {/* Nombre del producto */}
-                  <div className="font-bold mb-1">{producto.nombre}</div>
-                  
-                  {/* Si tiene colores, mostrar cada color en una línea */}
-                  {producto.colores && producto.colores.length > 0 ? (
-                    producto.colores.map((color, colorIdx) => {
-                      const colorStr = typeof color === 'string' ? color : color.nombre || color;
-                      // Dividir cantidad entre colores si hay múltiples
-                      const cantidadPorColor = Math.floor(producto.cantidad / producto.colores.length);
-                      const resto = colorIdx === 0 ? producto.cantidad % producto.colores.length : 0;
-                      const cantidad = cantidadPorColor + resto;
-                      
-                      return (
-                        <div key={colorIdx} className="flex justify-between pl-4 text-[11px]">
-                          <span className="flex-1">{colorStr.toUpperCase()}</span>
-                          <span className="w-12 text-center">{cantidad}</span>
-                          <span className="w-16 text-right">${producto.precioUnitario.toFixed(2)}</span>
-                          <span className="w-20 text-right font-bold">
-                            ${(cantidad * producto.precioUnitario).toFixed(2)}
-                          </span>
-                        </div>
-                      );
-                    })
-                  ) : (
-                    // Si no tiene colores, mostrar cantidad directa
-                    <div className="flex justify-between pl-4 text-[11px]">
-                      <span className="flex-1">N/A</span>
-                      <span className="w-12 text-center">{producto.cantidad}</span>
-                      <span className="w-16 text-right">${producto.precioUnitario.toFixed(2)}</span>
-                      <span className="w-20 text-right font-bold">
-                        ${(producto.cantidad * producto.precioUnitario).toFixed(2)}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              ))}
+              <div className="text-sm">Cliente:</div>
+              <div className="text-xl font-bold text-center my-2">{pedido.cliente}</div>
             </div>
 
-            <div className="border-t border-black pt-2 mb-3">
+            {/* Fecha */}
+            <div className="text-xs mb-3">
+              <div className="flex justify-between mb-1">
+                <span>Fecha:</span>
+                <span>{new Date(pedido.fecha).toLocaleDateString('es-MX')}</span>
+              </div>
+            </div>
+
+            <div className="border-t-2 border-black my-3"></div>
+
+            {/* Tabla de productos */}
+            <table className="w-full text-xs mb-3">
+              <thead>
+                <tr className="border-b-2 border-black">
+                  <th className="text-left pb-1">PRODUCTO</th>
+                  <th className="text-center pb-1">CANTIDAD</th>
+                  <th className="text-right pb-1">P/PIEZA</th>
+                  <th className="text-right pb-1">TOTAL</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pedido.productos.map((producto, index) => {
+                  // Filtrar colores que tengan cantidad > 0
+                  let coloresConCantidad = [];
+                  if (producto.colores && Array.isArray(producto.colores)) {
+                    coloresConCantidad = producto.colores.filter(c => {
+                      if (!c) return false;
+                      // Si el color es un objeto con cantidad
+                      if (typeof c === 'object' && c.cantidad !== undefined) {
+                        return c.cantidad > 0;
+                      }
+                      // Si es solo string, incluirlo
+                      return true;
+                    });
+                  }
+                  
+                  return (
+                    <tr key={index} className="border-b border-gray-300">
+                      <td className="py-2">
+                        <div className="font-bold">{producto.nombre}</div>
+                        {coloresConCantidad.length > 0 && (
+                          <div className="text-[10px]">
+                            {coloresConCantidad.map(c => {
+                              if (typeof c === 'string') return c;
+                              if (typeof c === 'object') {
+                                return c.nombre || '';
+                              }
+                              return '';
+                            }).filter(Boolean).join(', ')}
+                          </div>
+                        )}
+                      </td>
+                      <td className="text-center py-2">{producto.cantidad}</td>
+                      <td className="text-right py-2">${producto.precioUnitario.toFixed(2)}</td>
+                      <td className="text-right py-2 font-bold">
+                        ${(producto.cantidad * producto.precioUnitario).toFixed(2)}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+
+            <div className="border-t-2 border-black my-3"></div>
+
+            {/* Totales */}
+            <div className="mb-3">
               <div className="flex justify-between text-sm">
-                <span>Total de artículos</span>
+                <span>Total de artículos:</span>
                 <span className="font-bold">
                   {pedido.productos.reduce((sum, p) => sum + p.cantidad, 0)}
                 </span>
               </div>
-              <div className="flex justify-between font-bold text-base mt-1">
-                <span>Precio total</span>
+              <div className="flex justify-between text-base font-bold mt-1">
+                <span>Precio total:</span>
                 <span>${pedido.total.toFixed(2)}</span>
               </div>
             </div>
 
-            <div className="border-t border-black pt-2"></div>
+            <div className="border-t-2 border-black my-3"></div>
 
-            {/* Política */}
-            <div className="text-[9px] text-center leading-tight space-y-0.5 mt-3">
-              <p className="font-bold text-[10px]">7 DÍAS DE GARANTÍA CON TICKET ORIGINAL</p>
+            {/* Garantía */}
+            <div className="text-[9px] text-center leading-tight">
+              <p className="font-bold text-[10px] mb-1">7 DÍAS DE GARANTÍA CON TICKET ORIGINAL</p>
               <p>(REPARACIÓN) ES PIEZAS NO ROTO NO</p>
               <p>DEFECTOS DE FÁBRICA NO ROTO NO</p>
               <p>MALTRATADO NO HAY CAMBIOS NI</p>

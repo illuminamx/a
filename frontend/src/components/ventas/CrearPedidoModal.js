@@ -4,6 +4,7 @@ import { db } from '../../firebase';
 import { useTheme } from '../../context/ThemeContext';
 import { useToast } from '../Toast';
 import { X, Plus, Minus, Trash2, ShoppingCart } from 'lucide-react';
+import TicketGenerator from './TicketGenerator';
 
 const CrearPedidoModal = ({ cliente, onClose, onPedidoCreated }) => {
   const { isDark } = useTheme();
@@ -14,6 +15,7 @@ const CrearPedidoModal = ({ cliente, onClose, onPedidoCreated }) => {
   const [usarPreciosEspeciales, setUsarPreciosEspeciales] = useState(true);
   const [montoPagado, setMontoPagado] = useState('');
   const [creando, setCreando] = useState(false);
+  const [generatedTicket, setGeneratedTicket] = useState(null);
 
   useEffect(() => {
     loadProductos();
@@ -89,7 +91,7 @@ const CrearPedidoModal = ({ cliente, onClose, onPedidoCreated }) => {
     return carrito.reduce((sum, item) => sum + (item.precioUnitario * item.cantidad), 0);
   };
 
-  const handleCrearPedido = async () => {
+  const handleFinalizarPedido = async () => {
     if (carrito.length === 0) {
       showToast('El carrito está vacío', 'warning');
       return;
@@ -120,18 +122,28 @@ const CrearPedidoModal = ({ cliente, onClose, onPedidoCreated }) => {
         estado: pago >= total ? 'completado' : 'pendiente'
       };
 
-      await addDoc(collection(db, 'pedidos'), pedidoData);
+      const docRef = await addDoc(collection(db, 'pedidos'), pedidoData);
       
-      showToast('Pedido creado correctamente', 'success');
+      // Generar ticket
+      const ticketData = {
+        ...pedidoData,
+        id: docRef.id
+      };
+      setGeneratedTicket(ticketData);
+      
+      showToast('Pedido finalizado correctamente', 'success');
       onPedidoCreated();
-      onClose();
     } catch (error) {
       console.error('Error creando pedido:', error);
-      showToast('Error al crear pedido', 'error');
+      showToast('Error al finalizar pedido', 'error');
     } finally {
       setCreando(false);
     }
   };
+
+  const cambio = montoPagado && parseFloat(montoPagado) > getTotal() 
+    ? parseFloat(montoPagado) - getTotal() 
+    : 0;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
@@ -142,7 +154,7 @@ const CrearPedidoModal = ({ cliente, onClose, onPedidoCreated }) => {
           isDark ? 'border-white/10' : 'border-gray-200'
         }`}>
           <div>
-            <h2 className="text-2xl font-bold">Crear Pedido</h2>
+            <h2 className="text-2xl font-bold">Finalizar Pedido</h2>
             <p className={`text-sm mt-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
               Cliente: {cliente.nombre}
             </p>
@@ -298,10 +310,15 @@ const CrearPedidoModal = ({ cliente, onClose, onPedidoCreated }) => {
                       Adeudo: ${(getTotal() - parseFloat(montoPagado)).toFixed(2)}
                     </p>
                   )}
+                  {cambio > 0 && (
+                    <p className="text-xs text-green-500 mt-1">
+                      Cambio: ${cambio.toFixed(2)}
+                    </p>
+                  )}
                 </div>
 
                 <button
-                  onClick={handleCrearPedido}
+                  onClick={handleFinalizarPedido}
                   disabled={carrito.length === 0 || creando}
                   className={`w-full py-3 rounded-lg font-medium transition-colors ${
                     isDark
@@ -309,13 +326,24 @@ const CrearPedidoModal = ({ cliente, onClose, onPedidoCreated }) => {
                       : 'bg-black text-white hover:bg-gray-800'
                   } disabled:opacity-50 disabled:cursor-not-allowed`}
                 >
-                  {creando ? 'Creando...' : 'Crear Pedido'}
+                  {creando ? 'Procesando...' : 'Finalizar Pedido'}
                 </button>
               </div>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Ticket Generator */}
+      {generatedTicket && (
+        <TicketGenerator
+          pedido={generatedTicket}
+          onClose={() => {
+            setGeneratedTicket(null);
+            onClose();
+          }}
+        />
+      )}
     </div>
   );
 };

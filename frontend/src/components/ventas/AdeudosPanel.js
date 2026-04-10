@@ -12,6 +12,7 @@ const AdeudosPanel = ({ pedidos, onPedidosChange }) => {
   const [montoAbono, setMontoAbono] = useState('');
   const [processing, setProcessing] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [showPagarConfirm, setShowPagarConfirm] = useState(null);
 
   // Filtrar adeudos
   const filteredAdeudos = pedidos.filter(pedido =>
@@ -27,7 +28,7 @@ const AdeudosPanel = ({ pedidos, onPedidosChange }) => {
 
     const abono = parseFloat(montoAbono);
     if (abono <= 0 || abono > selectedPedido.adeudo) {
-      alert('El monto debe ser mayor a 0 y menor o igual al adeudo');
+      showToast('El monto debe ser mayor a 0 y menor o igual al adeudo', 'warning');
       return;
     }
 
@@ -55,10 +56,6 @@ const AdeudosPanel = ({ pedidos, onPedidosChange }) => {
   };
 
   const handleMarcarPagado = async (pedido) => {
-    if (!window.confirm('¿Marcar como pagado completamente?')) {
-      return;
-    }
-
     try {
       await updateDoc(doc(db, 'pedidos', pedido.id), {
         adeudo: 0,
@@ -66,7 +63,8 @@ const AdeudosPanel = ({ pedidos, onPedidosChange }) => {
         estado: 'completado'
       });
       onPedidosChange();
-      alert('Pedido marcado como pagado');
+      showToast('Pedido marcado como pagado', 'success');
+      setShowPagarConfirm(null);
     } catch (error) {
       console.error('Error actualizando pedido:', error);
       showToast('Error al actualizar el pedido', 'error');
@@ -185,7 +183,7 @@ const AdeudosPanel = ({ pedidos, onPedidosChange }) => {
                   Abonar
                 </button>
                 <button
-                  onClick={() => handleMarcarPagado(pedido)}
+                  onClick={() => setShowPagarConfirm(pedido)}
                   className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg transition-colors ${
                     isDark
                       ? 'bg-green-500/20 hover:bg-green-500/30 text-green-400'
@@ -315,6 +313,40 @@ const AdeudosPanel = ({ pedidos, onPedidosChange }) => {
                 } disabled:opacity-50 disabled:cursor-not-allowed`}
               >
                 {processing ? 'Registrando...' : 'Registrar Abono'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirm Pagar Modal */}
+      {showPagarConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className={`w-full max-w-md rounded-2xl shadow-2xl p-6 ${
+            isDark ? 'bg-zinc-900' : 'bg-white'
+          }`}>
+            <h3 className="text-xl font-bold mb-4">¿Marcar como Pagado?</h3>
+            <p className={`mb-6 ${
+              isDark ? 'text-gray-400' : 'text-gray-600'
+            }`}>
+              Esto marcará el pedido de {showPagarConfirm.cliente} como completamente pagado.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowPagarConfirm(null)}
+                className={`flex-1 px-4 py-3 rounded-lg font-medium transition-colors ${
+                  isDark
+                    ? 'bg-white/10 hover:bg-white/20'
+                    : 'bg-gray-100 hover:bg-gray-200'
+                }`}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => handleMarcarPagado(showPagarConfirm)}
+                className="flex-1 px-4 py-3 rounded-lg font-medium transition-colors bg-green-500 hover:bg-green-600 text-white"
+              >
+                Confirmar
               </button>
             </div>
           </div>

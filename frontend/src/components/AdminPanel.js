@@ -16,6 +16,7 @@ const AdminPanel = () => {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
   const { logout } = useAuth();
   const { isDark, toggleTheme } = useTheme();
   const { showToast } = useToast();
@@ -62,14 +63,11 @@ const AdminPanel = () => {
   };
 
   const handleDeleteProduct = async (productId) => {
-    if (!window.confirm('¿Estás seguro de eliminar este producto?')) {
-      return;
-    }
-
     try {
       await deleteDoc(doc(db, 'productos', productId));
       setProducts(products.filter(p => p.id !== productId));
       showToast('Producto eliminado correctamente', 'success');
+      setShowDeleteConfirm(null);
     } catch (error) {
       console.error('Error eliminando producto:', error);
       showToast('Error al eliminar producto', 'error');
@@ -283,7 +281,7 @@ const AdminPanel = () => {
                       Editar
                     </button>
                     <button
-                      onClick={() => handleDeleteProduct(product.id)}
+                      onClick={() => setShowDeleteConfirm(product)}
                       className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg transition-colors ${
                         isDark
                           ? 'bg-red-500/20 hover:bg-red-500/30 text-red-400'
@@ -311,6 +309,40 @@ const AdminPanel = () => {
             setEditingProduct(null);
           }}
         />
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className={`w-full max-w-md rounded-2xl shadow-2xl p-6 ${
+            isDark ? 'bg-zinc-900' : 'bg-white'
+          }`}>
+            <h3 className="text-xl font-bold mb-4">¿Eliminar Producto?</h3>
+            <p className={`mb-6 ${
+              isDark ? 'text-gray-400' : 'text-gray-600'
+            }`}>
+              ¿Estás seguro de eliminar "{showDeleteConfirm.nombre}"? Esta acción no se puede deshacer.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowDeleteConfirm(null)}
+                className={`flex-1 px-4 py-3 rounded-lg font-medium transition-colors ${
+                  isDark
+                    ? 'bg-white/10 hover:bg-white/20'
+                    : 'bg-gray-100 hover:bg-gray-200'
+                }`}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => handleDeleteProduct(showDeleteConfirm.id)}
+                className="flex-1 px-4 py-3 rounded-lg font-medium transition-colors bg-red-500 hover:bg-red-600 text-white"
+              >
+                Eliminar
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

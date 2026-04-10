@@ -16,6 +16,7 @@ const ClientesPanel = ({ clientes, onClientesChange }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [showPreciosModal, setShowPreciosModal] = useState(null);
   const [showPedidoModal, setShowPedidoModal] = useState(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
 
   // Filtrar clientes
   const filteredClientes = clientes.filter(cliente =>
@@ -67,14 +68,11 @@ const ClientesPanel = ({ clientes, onClientesChange }) => {
   };
 
   const handleDeleteCliente = async (clienteId) => {
-    if (!window.confirm('¿Estás seguro de eliminar este cliente?')) {
-      return;
-    }
-
     try {
       await deleteDoc(doc(db, 'clientes', clienteId));
       onClientesChange();
       showToast('Cliente eliminado correctamente', 'success');
+      setShowDeleteConfirm(null);
     } catch (error) {
       console.error('Error eliminando cliente:', error);
       showToast('Error al eliminar cliente', 'error');
@@ -167,7 +165,7 @@ const ClientesPanel = ({ clientes, onClientesChange }) => {
                           className={`p-2 rounded-lg transition-colors ${
                             isDark ? 'hover:bg-blue-500/10 text-blue-400' : 'hover:bg-blue-50 text-blue-600'
                           }`}
-                          title="Crear pedido"
+                          title="Finalizar pedido"
                         >
                           <ShoppingCart size={16} />
                         </button>
@@ -190,7 +188,7 @@ const ClientesPanel = ({ clientes, onClientesChange }) => {
                           <Edit2 size={16} />
                         </button>
                         <button
-                          onClick={() => handleDeleteCliente(cliente.id)}
+                          onClick={() => setShowDeleteConfirm(cliente)}
                           className={`p-2 rounded-lg transition-colors text-red-500 ${
                             isDark ? 'hover:bg-red-500/10' : 'hover:bg-red-50'
                           }`}
@@ -282,6 +280,40 @@ const ClientesPanel = ({ clientes, onClientesChange }) => {
         </div>
       )}
 
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className={`w-full max-w-md rounded-2xl shadow-2xl p-6 ${
+            isDark ? 'bg-zinc-900' : 'bg-white'
+          }`}>
+            <h3 className="text-xl font-bold mb-4">¿Eliminar Cliente?</h3>
+            <p className={`mb-6 ${
+              isDark ? 'text-gray-400' : 'text-gray-600'
+            }`}>
+              ¿Estás seguro de eliminar a "{showDeleteConfirm.nombre}"? Esta acción no se puede deshacer.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowDeleteConfirm(null)}
+                className={`flex-1 px-4 py-3 rounded-lg font-medium transition-colors ${
+                  isDark
+                    ? 'bg-white/10 hover:bg-white/20'
+                    : 'bg-gray-100 hover:bg-gray-200'
+                }`}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => handleDeleteCliente(showDeleteConfirm.id)}
+                className="flex-1 px-4 py-3 rounded-lg font-medium transition-colors bg-red-500 hover:bg-red-600 text-white"
+              >
+                Eliminar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Modal de Precios Especiales */}
       {showPreciosModal && (
         <PreciosEspecialesModal
@@ -291,7 +323,7 @@ const ClientesPanel = ({ clientes, onClientesChange }) => {
         />
       )}
 
-      {/* Modal de Crear Pedido */}
+      {/* Modal de Finalizar Pedido */}
       {showPedidoModal && (
         <CrearPedidoModal
           cliente={showPedidoModal}
