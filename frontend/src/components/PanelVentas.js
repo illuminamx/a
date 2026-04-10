@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, where } from 'firebase/firestore';
+import { collection, getDocs, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -26,7 +26,25 @@ const PanelVentas = () => {
 
   useEffect(() => {
     loadClientes();
-    loadPedidos();
+    
+    // Listener en tiempo real para pedidos
+    const unsubscribePedidos = onSnapshot(
+      collection(db, 'pedidos'),
+      (snapshot) => {
+        const pedidosData = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        setPedidos(pedidosData);
+      },
+      (error) => {
+        console.error('Error en listener de pedidos:', error);
+      }
+    );
+
+    return () => {
+      unsubscribePedidos();
+    };
   }, []);
 
   const loadClientes = async () => {
@@ -39,19 +57,6 @@ const PanelVentas = () => {
       setClientes(clientesData);
     } catch (error) {
       console.error('Error cargando clientes:', error);
-    }
-  };
-
-  const loadPedidos = async () => {
-    try {
-      const querySnapshot = await getDocs(collection(db, 'pedidos'));
-      const pedidosData = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      setPedidos(pedidosData);
-    } catch (error) {
-      console.error('Error cargando pedidos:', error);
     }
   };
 
@@ -171,13 +176,13 @@ const PanelVentas = () => {
             {activeTab === 'pedidos' && (
               <PedidosPanel 
                 pedidos={pedidos}
-                onPedidosChange={loadPedidos}
+                onPedidosChange={() => {}} // Ya no necesario, auto-refresh con listener
               />
             )}
             {activeTab === 'adeudos' && (
               <AdeudosPanel 
                 pedidos={pedidos.filter(p => p.adeudo > 0)}
-                onPedidosChange={loadPedidos}
+                onPedidosChange={() => {}} // Ya no necesario, auto-refresh con listener
               />
             )}
           </div>
@@ -187,7 +192,6 @@ const PanelVentas = () => {
             <div className="lg:col-span-1">
               <CarritoPanel 
                 onPedidoCreated={() => {
-                  loadPedidos();
                   loadClientes();
                 }}
               />

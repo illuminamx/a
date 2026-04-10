@@ -140,8 +140,8 @@ const PreciosEspecialesModal = ({ cliente, onClose, onSave }) => {
                       </div>
                     </div>
 
-                    {/* Precio Especial Input y Botones */}
-                    <div className="w-48 flex-shrink-0 space-y-2">
+                    {/* Precio Especial Input SOLO */}
+                    <div className="w-48 flex-shrink-0">
                       <div className="relative">
                         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm">$</span>
                         <input
@@ -158,54 +158,8 @@ const PreciosEspecialesModal = ({ cliente, onClose, onSave }) => {
                         />
                       </div>
                       
-                      {/* Botones de precio rápido */}
-                      <div className="grid grid-cols-2 gap-1">
-                        {producto.pieza && (
-                          <button
-                            type="button"
-                            onClick={() => handlePrecioChange(producto.id, producto.pieza)}
-                            className={`text-xs px-2 py-1 rounded transition-colors ${
-                              isDark ? 'bg-white/10 hover:bg-white/20' : 'bg-gray-100 hover:bg-gray-200'
-                            }`}
-                          >
-                            Pieza
-                          </button>
-                        )}
-                        {producto.mayoreo && (
-                          <button
-                            type="button"
-                            onClick={() => handlePrecioChange(producto.id, producto.mayoreo)}
-                            className={`text-xs px-2 py-1 rounded transition-colors ${
-                              isDark ? 'bg-white/10 hover:bg-white/20' : 'bg-gray-100 hover:bg-gray-200'
-                            }`}
-                          >
-                            Mayoreo
-                          </button>
-                        )}
-                        {producto.caja && (
-                          <button
-                            type="button"
-                            onClick={() => handlePrecioChange(producto.id, producto.caja)}
-                            className={`text-xs px-2 py-1 rounded transition-colors ${
-                              isDark ? 'bg-white/10 hover:bg-white/20' : 'bg-gray-100 hover:bg-gray-200'
-                            }`}
-                          >
-                            Caja
-                          </button>
-                        )}
-                        {preciosEspeciales[producto.id] && (
-                          <button
-                            type="button"
-                            onClick={() => handlePrecioChange(producto.id, '')}
-                            className="text-xs px-2 py-1 rounded transition-colors bg-red-500/20 text-red-500 hover:bg-red-500/30"
-                          >
-                            Quitar
-                          </button>
-                        )}
-                      </div>
-                      
                       {preciosEspeciales[producto.id] && (
-                        <p className="text-xs text-green-500 text-center">
+                        <p className="text-xs text-green-500 text-center mt-2">
                           <Tag size={10} className="inline mr-1" />
                           Precio activo
                         </p>

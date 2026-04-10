@@ -3,7 +3,7 @@ import { collection, getDocs, addDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useTheme } from '../../context/ThemeContext';
 import { useToast } from '../Toast';
-import { X, Plus, Minus, Trash2, ShoppingCart } from 'lucide-react';
+import { X, Plus, Minus, Trash2, ShoppingCart, ChevronDown } from 'lucide-react';
 import TicketGenerator from './TicketGenerator';
 
 const CrearPedidoModal = ({ cliente, onClose, onPedidoCreated }) => {
@@ -12,10 +12,11 @@ const CrearPedidoModal = ({ cliente, onClose, onPedidoCreated }) => {
   const [productos, setProductos] = useState([]);
   const [carrito, setCarrito] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [usarPreciosEspeciales, setUsarPreciosEspeciales] = useState(true);
   const [montoPagado, setMontoPagado] = useState('');
   const [creando, setCreando] = useState(false);
   const [generatedTicket, setGeneratedTicket] = useState(null);
+  const [expandedProduct, setExpandedProduct] = useState(null);
+  const [customPrice, setCustomPrice] = useState({});
 
   useEffect(() => {
     loadProductos();
@@ -37,31 +38,35 @@ const CrearPedidoModal = ({ cliente, onClose, onPedidoCreated }) => {
     }
   };
 
-  const getPrecioProducto = (producto) => {
-    // Si hay precio especial y está activado
-    if (usarPreciosEspeciales && cliente.preciosEspeciales?.[producto.id]) {
-      return {
-        precio: cliente.preciosEspeciales[producto.id],
-        tipo: 'especial'
-      };
-    }
-    // Precio por defecto (pieza)
-    return {
-      precio: producto.pieza || producto.mayoreo || producto.caja || 0,
-      tipo: 'pieza'
-    };
-  };
+  const agregarAlCarrito = (producto, priceType, customPriceValue = null) => {
+    let precio;
+    let tipo;
 
-  const agregarAlCarrito = (producto, priceType = 'pieza') => {
-    const existente = carrito.find(item => item.id === producto.id && item.priceType === priceType);
-    
-    const precioInfo = usarPreciosEspeciales && cliente.preciosEspeciales?.[producto.id]
-      ? { precio: cliente.preciosEspeciales[producto.id], tipo: 'especial' }
-      : { precio: producto[priceType] || producto.pieza, tipo: priceType };
+    if (priceType === 'custom' && customPriceValue) {
+      precio = parseFloat(customPriceValue);
+      tipo = 'personalizado';
+    } else if (priceType === 'listado' && cliente.preciosEspeciales?.[producto.id]) {
+      precio = cliente.preciosEspeciales[producto.id];
+      tipo = 'listado';
+    } else if (priceType === 'pieza' && producto.pieza) {
+      precio = producto.pieza;
+      tipo = 'pieza';
+    } else if (priceType === 'mayoreo' && producto.mayoreo) {
+      precio = producto.mayoreo;
+      tipo = 'mayoreo';
+    } else if (priceType === 'caja' && producto.caja) {
+      precio = producto.caja;
+      tipo = 'caja';
+    } else {
+      showToast('Precio no disponible', 'warning');
+      return;
+    }
+
+    const existente = carrito.find(item => item.id === producto.id && item.priceType === tipo);
 
     if (existente) {
       setCarrito(carrito.map(item =>
-        item.id === producto.id && item.priceType === priceType
+        item.id === producto.id && item.priceType === tipo
           ? { ...item, cantidad: item.cantidad + 1 }
           : item
       ));
@@ -69,10 +74,15 @@ const CrearPedidoModal = ({ cliente, onClose, onPedidoCreated }) => {
       setCarrito([...carrito, {
         ...producto,
         cantidad: 1,
-        precioUnitario: precioInfo.precio,
-        priceType: precioInfo.tipo
+        precioUnitario: precio,
+        priceType: tipo
       }]);
     }
+
+    // Reset
+    setExpandedProduct(null);
+    setCustomPrice({});
+    showToast('Producto agregado', 'success');
   };
 
   const actualizarCantidad = (id, priceType, cantidad) => {
@@ -173,18 +183,7 @@ const CrearPedidoModal = ({ cliente, onClose, onPedidoCreated }) => {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Productos */}
             <div className="lg:col-span-2">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold text-lg">Productos</h3>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={usarPreciosEspeciales}
-                    onChange={(e) => setUsarPreciosEspeciales(e.target.checked)}
-                    className="rounded"
-                  />
-                  <span className="text-sm">Usar precios especiales</span>
-                </label>
-              </div>
+              <h3 className="font-semibold text-lg mb-4">Productos</h3>
 
               {loading ? (
                 <div className="flex items-center justify-center py-20">
@@ -195,7 +194,9 @@ const CrearPedidoModal = ({ cliente, onClose, onPedidoCreated }) => {
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {productos.map(producto => {
-                    const precioInfo = getPrecioProducto(producto);
+                    const isExpanded = expandedProduct === producto.id;
+                    const tienePrecioListado = cliente.preciosEspeciales?.[producto.id];
+                    
                     return (
                       <div
                         key={producto.id}
@@ -213,19 +214,98 @@ const CrearPedidoModal = ({ cliente, onClose, onPedidoCreated }) => {
                           </div>
                           <div className="flex-1 min-w-0">
                             <h4 className="font-medium text-sm truncate">{producto.nombre}</h4>
-                            <p className="text-xs text-green-500 font-semibold mt-1">
-                              ${precioInfo.precio} 
-                              {precioInfo.tipo === 'especial' && ' (Especial)'}
-                            </p>
-                            <button
-                              onClick={() => agregarAlCarrito(producto, precioInfo.tipo)}
-                              className={`mt-2 w-full text-xs px-2 py-1 rounded transition-colors ${
-                                isDark ? 'bg-white/10 hover:bg-white/20' : 'bg-black/5 hover:bg-black/10'
-                              }`}
-                            >
-                              <Plus size={12} className="inline mr-1" />
-                              Agregar
-                            </button>
+                            <div className="text-xs mt-1 space-y-0.5">
+                              {producto.pieza && <p className={isDark ? 'text-gray-400' : 'text-gray-600'}>Pieza: ${producto.pieza}</p>}
+                              {producto.mayoreo && <p className={isDark ? 'text-gray-400' : 'text-gray-600'}>Mayoreo: ${producto.mayoreo}</p>}
+                              {producto.caja && <p className={isDark ? 'text-gray-400' : 'text-gray-600'}>Caja: ${producto.caja}</p>}
+                              {tienePrecioListado && <p className="text-green-500 font-semibold">Listado: ${cliente.preciosEspeciales[producto.id]}</p>}
+                            </div>
+
+                            {/* Botón Agregar */}
+                            {!isExpanded ? (
+                              <button
+                                onClick={() => setExpandedProduct(producto.id)}
+                                className={`mt-2 w-full text-xs px-2 py-1.5 rounded transition-colors flex items-center justify-center gap-1 ${
+                                  isDark ? 'bg-white/10 hover:bg-white/20' : 'bg-black/5 hover:bg-black/10'
+                                }`}
+                              >
+                                <Plus size={12} />
+                                Agregar
+                                <ChevronDown size={12} />
+                              </button>
+                            ) : (
+                              <div className="mt-2 space-y-1">
+                                {/* Precio Personalizado */}
+                                <div className="flex gap-1">
+                                  <input
+                                    type="number"
+                                    step="0.01"
+                                    placeholder="$ Personalizado"
+                                    value={customPrice[producto.id] || ''}
+                                    onChange={(e) => setCustomPrice({...customPrice, [producto.id]: e.target.value})}
+                                    className={`flex-1 text-xs px-2 py-1 rounded border outline-none ${
+                                      isDark ? 'bg-white/5 border-white/10 text-white' : 'bg-white border-gray-200'
+                                    }`}
+                                  />
+                                  <button
+                                    onClick={() => agregarAlCarrito(producto, 'custom', customPrice[producto.id])}
+                                    disabled={!customPrice[producto.id]}
+                                    className="text-xs px-2 py-1 rounded bg-blue-500 text-white hover:bg-blue-600 disabled:opacity-50"
+                                  >
+                                    +
+                                  </button>
+                                </div>
+                                {/* 4 Botones */}
+                                <div className="grid grid-cols-2 gap-1">
+                                  {producto.pieza && (
+                                    <button
+                                      onClick={() => agregarAlCarrito(producto, 'pieza')}
+                                      className={`text-xs px-2 py-1 rounded ${
+                                        isDark ? 'bg-white/10 hover:bg-white/20' : 'bg-gray-100 hover:bg-gray-200'
+                                      }`}
+                                    >
+                                      Pieza
+                                    </button>
+                                  )}
+                                  {producto.mayoreo && (
+                                    <button
+                                      onClick={() => agregarAlCarrito(producto, 'mayoreo')}
+                                      className={`text-xs px-2 py-1 rounded ${
+                                        isDark ? 'bg-white/10 hover:bg-white/20' : 'bg-gray-100 hover:bg-gray-200'
+                                      }`}
+                                    >
+                                      Mayoreo
+                                    </button>
+                                  )}
+                                  {producto.caja && (
+                                    <button
+                                      onClick={() => agregarAlCarrito(producto, 'caja')}
+                                      className={`text-xs px-2 py-1 rounded ${
+                                        isDark ? 'bg-white/10 hover:bg-white/20' : 'bg-gray-100 hover:bg-gray-200'
+                                      }`}
+                                    >
+                                      Caja
+                                    </button>
+                                  )}
+                                  {tienePrecioListado && (
+                                    <button
+                                      onClick={() => agregarAlCarrito(producto, 'listado')}
+                                      className="text-xs px-2 py-1 rounded bg-green-500/20 text-green-500 hover:bg-green-500/30"
+                                    >
+                                      Listado
+                                    </button>
+                                  )}
+                                </div>
+                                <button
+                                  onClick={() => setExpandedProduct(null)}
+                                  className={`w-full text-xs px-2 py-1 rounded ${
+                                    isDark ? 'bg-red-500/20 text-red-400' : 'bg-red-50 text-red-600'
+                                  }`}
+                                >
+                                  Cancelar
+                                </button>
+                              </div>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -256,7 +336,10 @@ const CrearPedidoModal = ({ cliente, onClose, onPedidoCreated }) => {
                         isDark ? 'bg-white/5 border-white/10' : 'bg-white border-gray-200'
                       }`}>
                         <div className="flex items-center justify-between mb-2">
-                          <span className="text-sm font-medium flex-1 truncate">{item.nombre}</span>
+                          <div className="flex-1">
+                            <span className="text-sm font-medium block truncate">{item.nombre}</span>
+                            <span className="text-xs text-green-500">({item.priceType})</span>
+                          </div>
                           <button
                             onClick={() => actualizarCantidad(item.id, item.priceType, 0)}
                             className="text-red-500 p-1"
