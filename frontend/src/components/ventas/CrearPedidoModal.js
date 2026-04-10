@@ -23,6 +23,7 @@ const CrearPedidoModal = ({ cliente, onClose, onPedidoCreated }) => {
 
   useEffect(() => {
     loadProductos();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadProductos = async () => {

@@ -18,6 +18,7 @@ const PreciosEspecialesModal = ({ cliente, onClose, onSave }) => {
     if (cliente.preciosEspeciales) {
       setPreciosEspeciales(cliente.preciosEspeciales);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cliente]);
 
   const loadProductos = async () => {

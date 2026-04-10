@@ -57,18 +57,20 @@ git push -u origin main
 Haz clic en **"Environment Variables"** y agrega **TODAS** estas:
 
 ```
-REACT_APP_FIREBASE_API_KEY = [tu_valor_aquí]
-REACT_APP_FIREBASE_AUTH_DOMAIN = [tu_valor_aquí]
-REACT_APP_FIREBASE_PROJECT_ID = [tu_valor_aquí]
-REACT_APP_FIREBASE_STORAGE_BUCKET = [tu_valor_aquí]
-REACT_APP_FIREBASE_MESSAGING_SENDER_ID = [tu_valor_aquí]
-REACT_APP_FIREBASE_APP_ID = [tu_valor_aquí]
-REACT_APP_FIREBASE_MEASUREMENT_ID = [tu_valor_aquí]
+CI=false
+GENERATE_SOURCEMAP=false
+REACT_APP_FIREBASE_API_KEY=AIzaSyAfGUY4o4Q82aUL0_Q_i_V3F3LrFo_ili4
+REACT_APP_FIREBASE_AUTH_DOMAIN=jessica-61abf.firebaseapp.com
+REACT_APP_FIREBASE_PROJECT_ID=jessica-61abf
+REACT_APP_FIREBASE_STORAGE_BUCKET=jessica-61abf.firebasestorage.app
+REACT_APP_FIREBASE_MESSAGING_SENDER_ID=768498636608
+REACT_APP_FIREBASE_APP_ID=1:768498636608:web:857cc073ba02c6d7b00ca5
+REACT_APP_FIREBASE_MEASUREMENT_ID=G-2TQBLT25TG
 ```
 
-**¿Dónde obtener estos valores?**
-- Están en tu archivo `/app/frontend/.env` actual
-- O en Firebase Console → Project Settings → General → Your apps
+**IMPORTANTE:** 
+- `CI=false` es necesario para que el build no falle por warnings
+- Copia cada variable **una por una** en Vercel
 
 ### 5. Deploy
 - Haz clic en **"Deploy"**

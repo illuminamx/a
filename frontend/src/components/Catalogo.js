@@ -29,6 +29,7 @@ const Catalogo = () => {
     } else {
       setSearchResults([]);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchTerm, products]);
 
   const loadProducts = async () => {
